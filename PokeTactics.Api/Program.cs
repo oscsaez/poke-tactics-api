@@ -1,12 +1,24 @@
+using Microsoft.EntityFrameworkCore;
 using PokeTactics.Api.Utils;
+using PokeTactics.Infrastructure.Data;
+using PokeTactics.Infrastructure;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+ConfigurationManager configuration = builder.Configuration;
+string? connectionString = configuration.GetConnectionString(ApiConstants.DefaultConnection);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddDbContext<PokeTacticsContext>(options =>
+    options.UseMySql(
+        connectionString,
+        ServerVersion.AutoDetect(connectionString),
+        x => x.MigrationsAssembly(ApiConstants.MigrationsAssembly)));
 
-var app = builder.Build();
+builder.Services.AddOpenApi();
+builder.Services.AddInfrastructureServices();
+
+WebApplication app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
