@@ -1,11 +1,15 @@
 using PokeTactics.Core.Interfaces;
+using PokeTactics.Core.Interfaces.Daos;
+using PokeTactics.Infrastructure.Daos;
 
 namespace PokeTactics.Infrastructure.Data
 {
     public class UnitOfWork : IUnitOfWork
     {
         private readonly PokeTacticsContext _dbContext;
-        // Set here private readonly DAOs
+        
+        // Set here private DAOs
+        private IPokemonDao? _pokemonDao;
 
         public UnitOfWork(PokeTacticsContext dbContext)
         {
@@ -13,6 +17,7 @@ namespace PokeTactics.Infrastructure.Data
         }
 
         // Set lazy loading for DAOs (instance DAOs only if they are used)
+        public IPokemonDao PokemonDao => _pokemonDao ??= new PokemonDao(_dbContext);
 
         public async Task<int> CommitAsync()
         {
