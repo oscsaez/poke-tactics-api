@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PokeTactics.Api.Utils;
 using PokeTactics.Infrastructure.Data;
 using PokeTactics.Infrastructure;
+using System.Text.Json;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 ConfigurationManager configuration = builder.Configuration;
@@ -14,6 +15,13 @@ builder.Services.AddDbContext<PokeTacticsContext>(options =>
         connectionString,
         ServerVersion.AutoDetect(connectionString),
         x => x.MigrationsAssembly(ApiConstants.MigrationsAssembly)));
+
+// Enable compatibility with camelCase json fields
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    });
 
 builder.Services.AddOpenApi();
 builder.Services.AddInfrastructureServices();
