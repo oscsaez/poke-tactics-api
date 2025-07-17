@@ -1,4 +1,8 @@
+using System.Text.Json.Serialization;
 using PokeTactics.Contracts.Ability.PokeApi;
+using PokeTactics.Contracts.Move.PokeApi;
+using PokeTactics.Contracts.Stat.PokeApi;
+using PokeTactics.Contracts.Type.PokeApi;
 
 namespace PokeTactics.Contracts.Pokemon.PokeApi
 {
@@ -10,13 +14,18 @@ namespace PokeTactics.Contracts.Pokemon.PokeApi
 
         public double Height { get; set; }
 
-        public double weight { get; set; }
+        public double Weight { get; set; }
 
-        // TODO Rest of the properties
+        [JsonPropertyName("base_experience")]
+        public int BaseExperience { get; set; }
+
+        public required ICollection<TypePokeApiResponse> Types { get; set; }
+
+        public required ICollection<StatPokeApiResponse> Stats { get; set; }
 
         public required ICollection<AbilitySlotPokeApiResponse> Abilities { get; set; }
 
-        public int BaseExperience { get; set; }
+        public required ICollection<MovePokeApiResponse> Moves { get; set; }
 
 
     }

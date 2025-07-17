@@ -1,8 +1,11 @@
+using System.Text.Json.Serialization;
+
 namespace PokeTactics.Contracts.Ability.PokeApi
 {
     public class AbilitySlotPokeApiResponse
     {
-        public required AbilitySummaryPokeApiResponse Ability { get; set; }
+        [JsonPropertyName("ability")]
+        public required AbilitySummaryPokeApiResponse AbilityInfo { get; set; }
 
         public bool IsHidden { get; set; }
 
