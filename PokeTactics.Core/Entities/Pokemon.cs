@@ -16,16 +16,16 @@ namespace PokeTactics.Core.Entities
         public double Weight { get; set; }
 
         [MaxListCount(CoreConstants.MaxTypesListCount)]
-        public required ICollection<string> Types { get; set; }
+        public ICollection<string> Types { get; set; } = [];
 
         // TODO Is this necessary? Spike different stats as properties
         [MaxListCount(CoreConstants.MaxStatsListCount)]
-        public required ICollection<Stat> Stats { get; set; }
+        public ICollection<Stat> Stats { get; set; } = [];
 
         [MaxListCount(CoreConstants.MaxAbilitiesListCount)]
-        public required ICollection<AbilitiesInPokemon> AbilitiesInPokemon { get; set; }
+        public ICollection<AbilitiesInPokemon> AbilitiesInPokemon { get; set; } = [];
 
-        public required ICollection<MovesInPokemon> MovesInPokemon { get; set; }
+        public ICollection<MovesInPokemon> MovesInPokemon { get; set; } = [];
 
         public required Sprite Sprite { get; set; }
     }

@@ -13,6 +13,6 @@ namespace PokeTactics.Core.Entities
 
         public bool IsHidden { get; set; }
 
-        public required ICollection<AbilitiesInPokemon> AbilitiesInPokemon { get; set; }
+        public ICollection<AbilitiesInPokemon> AbilitiesInPokemon { get; set; } = [];
     }
 }
