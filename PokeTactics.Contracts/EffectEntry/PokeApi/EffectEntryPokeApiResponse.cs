@@ -1,4 +1,6 @@
-namespace PokeTactics.Contracts.Move.PokeApi;
+using PokeTactics.Contracts.Language.PokeApi;
+
+namespace PokeTactics.Contracts.EffectEntry.PokeApi;
 
 public class EffectEntryPokeApiResponse
 {

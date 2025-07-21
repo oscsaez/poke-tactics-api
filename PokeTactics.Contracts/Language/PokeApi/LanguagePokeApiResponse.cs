@@ -1,4 +1,4 @@
-namespace PokeTactics.Contracts.Move.PokeApi;
+namespace PokeTactics.Contracts.Language.PokeApi;
 
 public class LanguagePokeApiResponse
 {
