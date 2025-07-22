@@ -1,4 +1,4 @@
-# poke-tactics-api
+# PokeTactics (back-end)
 API for PokeTactics app.
 
 ## 🛠️ Technologies and Tools
