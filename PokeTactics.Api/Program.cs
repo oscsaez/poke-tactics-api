@@ -3,6 +3,8 @@ using PokeTactics.Api.Utils;
 using PokeTactics.Infrastructure.Data;
 using PokeTactics.Infrastructure;
 using System.Text.Json;
+using PokeTactics.Core.Definitions;
+using PokeTactics.Api;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 ConfigurationManager configuration = builder.Configuration;
@@ -23,7 +25,12 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     });
 
+// Configure PokemonSyncSettings
+builder.Services.Configure<PokemonSyncSettings>(
+    builder.Configuration.GetSection("PokemonSync"));
+
 builder.Services.AddOpenApi();
+builder.Services.AddApiServices();
 builder.Services.AddInfrastructureServices();
 
 WebApplication app = builder.Build();
