@@ -1,7 +1,10 @@
 
+using Microsoft.Extensions.Options;
 using PokeTactics.Api.Utils;
+using PokeTactics.Contracts.Ability.PokeApi;
 using PokeTactics.Contracts.Move.PokeApi;
 using PokeTactics.Contracts.Pokemon.PokeApi;
+using PokeTactics.Core.Definitions;
 using PokeTactics.Core.Entities;
 using PokeTactics.Core.Exceptions;
 using PokeTactics.Core.Interfaces;
@@ -15,21 +18,38 @@ namespace PokeTactics.Api.HostedServices
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<PokemonSyncHostedService> _logger;
         private readonly HttpClient _httpClient;
+        private readonly SemaphoreSlim _semaphore;
+        private readonly int _intervalMinutes;
 
-        public PokemonSyncHostedService(IServiceProvider serviceProvider, ILogger<PokemonSyncHostedService> logger)
+        public PokemonSyncHostedService(
+            IServiceProvider serviceProvider,
+            ILogger<PokemonSyncHostedService> logger,
+            IOptions<PokemonSyncSettings> options)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
             _httpClient = new HttpClient { BaseAddress = ApiConstants.AllPokemonInfoUri.ToUri() };
+            _semaphore = new SemaphoreSlim(5);
+            _intervalMinutes = options.Value.IntervalMinutes;
         }
 
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Pokemon synchronization service started.");
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                // TODO Call SyncIfNeeded...
+                try
+                {
+                    await SyncIfNeeded(stoppingToken);
+
+                    // Wait until next synchronization
+                    await Task.Delay(TimeSpan.FromMinutes(_intervalMinutes), stoppingToken);
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogError(exception, "Error while synchronizing Pokemon.");
+                }
             }
         }
 
@@ -44,7 +64,7 @@ namespace PokeTactics.Api.HostedServices
             PokemonSummaryListPokeApiResponse response = await _httpClient.GetFromJsonAsync<PokemonSummaryListPokeApiResponse>(ApiConstants.AllPokemonInfoUri, cancellationToken)
                 ?? throw new PokeApiSyncException($"Something failed calling PokeApi. Path: [{ApiConstants.AllPokemonInfoUri}]");
 
-            if (numberOfPokemonInDatabase > response.Count)
+            if (numberOfPokemonInDatabase != response.Count)
             {
                 _logger.LogInformation("New Pokemon available in PokeApi. Initializing synchronization...");
                 await SyncAllPokemon(unitOfWork, response, cancellationToken);
@@ -63,15 +83,37 @@ namespace PokeTactics.Api.HostedServices
 
             foreach (string pokemonUri in pokemonUris)
             {
-                PokemonPokeApiResponse pokemonResponse = await _httpClient.GetFromJsonAsync<PokemonPokeApiResponse>(pokemonUri, cancellationToken)
-                    ?? throw new PokeApiSyncException($"Something failed calling PokeApi. Path: [{pokemonUri}]");
+                await _semaphore.WaitAsync(cancellationToken);
 
-                Pokemon pokemon = pokemonResponse.ToPokemon();
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        PokemonPokeApiResponse pokemonResponse = await _httpClient.GetFromJsonAsync<PokemonPokeApiResponse>(pokemonUri, cancellationToken)
+                            ?? throw new PokeApiSyncException($"Something failed calling PokeApi. Path: [{pokemonUri}]");
 
-                ICollection<MovesInPokemon> moves = await GetMovesInPokemon(pokemonResponse.Moves, cancellationToken);
+                        Pokemon pokemon = pokemonResponse.ToPokemon();
 
-                // TODO Continue with filling abilities and IMPORTANT -> Add PokeApi Ids of moves, abilities, etc and some logic not to trying to insert
-                // duplicates on DB
+                        ICollection<MovesInPokemon> moves = await GetMovesInPokemon(pokemonResponse.Moves, cancellationToken);
+                        ICollection<AbilitiesInPokemon> abilities = await GetAbilitiesInPokemon(pokemonResponse.Abilities, cancellationToken);
+
+                        pokemon.AbilitiesInPokemon.AddRange(abilities);
+                        pokemon.MovesInPokemon.AddRange(moves);
+
+                        // TODO IMPORTANT -> Add PokeApi Ids of moves, abilities, etc and some logic not to trying to insert
+                        // duplicates on DB
+                        await unitOfWork.PokemonDao.CreateAsync(pokemon);
+                        await unitOfWork.CommitAsync();
+                    }
+                    catch (Exception exception)
+                    {
+                        _logger.LogError(exception, "Error while trying to map and add a new Pokemon to DB.");
+                    }
+                    finally
+                    {
+                        _semaphore.Release();
+                    }
+                }, cancellationToken);
             }
         }
 
@@ -91,6 +133,25 @@ namespace PokeTactics.Api.HostedServices
             }
 
             return movesInPokemon;
+        }
+
+        private async Task<ICollection<AbilitiesInPokemon>> GetAbilitiesInPokemon(
+            ICollection<AbilitySlotPokeApiResponse> abilityResponses,
+            CancellationToken cancellationToken)
+        {
+            ICollection<AbilitiesInPokemon> abilitiesInPokemon = [];
+
+            foreach (AbilitySlotPokeApiResponse abilityResponse in abilityResponses)
+            {
+                string abilityUri = abilityResponse.AbilityInfo.Url;
+
+                AbilityEffectPokeApiResponse abilityEffectResponse = await _httpClient.GetFromJsonAsync<AbilityEffectPokeApiResponse>(abilityUri, cancellationToken)
+                    ?? throw new PokeApiSyncException($"Something failed calling PokeApi. Path: [{abilityUri}]");
+
+                abilitiesInPokemon.Add(AbilitiesInPokemonMapper.AbilityPokeApiResponseToAbilitiesInPokemon(abilityResponse, abilityEffectResponse));
+            }
+
+            return abilitiesInPokemon;
         }
     }
 }
