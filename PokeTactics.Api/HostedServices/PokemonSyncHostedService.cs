@@ -1,4 +1,5 @@
 
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Options;
 using PokeTactics.Api.Utils;
 using PokeTactics.Contracts.Ability.PokeApi;
@@ -24,11 +25,12 @@ namespace PokeTactics.Api.HostedServices
         public PokemonSyncHostedService(
             IServiceProvider serviceProvider,
             ILogger<PokemonSyncHostedService> logger,
+            IHttpClientFactory httpClientFactory,
             IOptions<PokemonSyncSettings> options)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
-            _httpClient = new HttpClient { BaseAddress = ApiConstants.AllPokemonInfoUri.ToUri() };
+            _httpClient = httpClientFactory.CreateClient(ApiConstants.ExternalApiName);
             _semaphore = new SemaphoreSlim(5);
             _intervalMinutes = options.Value.IntervalMinutes;
         }
@@ -55,6 +57,74 @@ namespace PokeTactics.Api.HostedServices
 
         private async Task SyncIfNeeded(CancellationToken cancellationToken)
         {
+            await SyncMoves(cancellationToken);
+            // await SyncPokemon(cancellationToken);
+        }
+
+        private async Task SyncMoves(CancellationToken cancellationToken)
+        {
+            using IServiceScope scope = _serviceProvider.CreateScope();
+            IUnitOfWork unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+
+            IDictionary<string, Move> existingMovesMap = await unitOfWork.MoveDao.LoadMapByName();
+
+            MoveSummaryListPokeApiResponse allMovesResponse = await _httpClient.GetFromJsonAsync<MoveSummaryListPokeApiResponse>(ApiConstants.AllMovesInfoUri, cancellationToken)
+                ?? throw new PokeApiSyncException(GetApiCallFailMessage(ApiConstants.AllMovesInfoUri));
+
+            ConcurrentBag<Move> newMoves = [];
+            ConcurrentBag<Move> updatedMoves = [];
+            List<Task> apiCalls = [];
+
+            foreach (MoveSummaryPokeApiResponse moveSummary in allMovesResponse.Results)
+            {
+                await _semaphore.WaitAsync(cancellationToken);
+
+                apiCalls.Add(Task.Run(async () =>
+                {
+                    try
+                    {
+                        MoveInfoPokeApiResponse moveInfoResponse = await _httpClient.GetFromJsonAsync<MoveInfoPokeApiResponse>(moveSummary.Url, cancellationToken)
+                            ?? throw new PokeApiSyncException();
+
+                        Move moveFromResponse = moveInfoResponse.ToMove(moveSummary.Name);
+
+                        if (existingMovesMap.TryGetValue(moveSummary.Name, out Move existingMove))
+                        {
+                            if (existingMove.Compare(moveFromResponse))
+                            {
+                                return;
+                            }
+
+                            existingMove.MapExisting(moveFromResponse);
+                            updatedMoves.Add(existingMove);
+                        }
+                        else
+                        {
+                            newMoves.Add(moveFromResponse);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        _logger.LogError(exception, "Error while trying to get new moves or the ones to be updated.");
+                    }
+                    finally
+                    {
+                        _semaphore.Release();
+                    }
+                }, cancellationToken));
+            }
+
+            await Task.WhenAll(apiCalls);
+
+            await unitOfWork.MoveDao.CreateRangeAsync(newMoves.ToList());
+            await unitOfWork.MoveDao.UpdateRangeAsync(updatedMoves.ToList());
+            await unitOfWork.CommitAsync();
+
+            _logger.LogInformation("Creation/Update of pokemon moves has been done!");
+        }
+
+        private async Task SyncPokemon(CancellationToken cancellationToken)
+        {
             using IServiceScope scope = _serviceProvider.CreateScope();
             IUnitOfWork unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
@@ -62,12 +132,12 @@ namespace PokeTactics.Api.HostedServices
             int numberOfPokemonInDatabase = await unitOfWork.PokemonDao.CountAsync();
 
             PokemonSummaryListPokeApiResponse response = await _httpClient.GetFromJsonAsync<PokemonSummaryListPokeApiResponse>(ApiConstants.AllPokemonInfoUri, cancellationToken)
-                ?? throw new PokeApiSyncException($"Something failed calling PokeApi. Path: [{ApiConstants.AllPokemonInfoUri}]");
+                ?? throw new PokeApiSyncException();
 
             if (numberOfPokemonInDatabase != response.Count)
             {
                 _logger.LogInformation("New Pokemon available in PokeApi. Initializing synchronization...");
-                await SyncAllPokemon(unitOfWork, response, cancellationToken);
+                await SyncAllPokemon(response, cancellationToken);
             }
             else
             {
@@ -77,7 +147,7 @@ namespace PokeTactics.Api.HostedServices
             _logger.LogInformation("Pokemon synchronization completed.");
         }
 
-        private async Task SyncAllPokemon(IUnitOfWork unitOfWork, PokemonSummaryListPokeApiResponse response, CancellationToken cancellationToken)
+        private async Task SyncAllPokemon(PokemonSummaryListPokeApiResponse response, CancellationToken cancellationToken)
         {
             IEnumerable<string> pokemonUris = response.Results.Select(x => x.Url);
 
@@ -89,20 +159,37 @@ namespace PokeTactics.Api.HostedServices
                 {
                     try
                     {
+                        using IServiceScope scope = _serviceProvider.CreateScope();
+                        IUnitOfWork unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+
+                        bool isNewPokemon = false;
+
                         PokemonPokeApiResponse pokemonResponse = await _httpClient.GetFromJsonAsync<PokemonPokeApiResponse>(pokemonUri, cancellationToken)
                             ?? throw new PokeApiSyncException($"Something failed calling PokeApi. Path: [{pokemonUri}]");
 
-                        Pokemon pokemon = pokemonResponse.ToPokemon();
+                        Pokemon? pokemon = await unitOfWork.PokemonDao.LoadByName(pokemonResponse.Name);
 
-                        ICollection<MovesInPokemon> moves = await GetMovesInPokemon(pokemonResponse.Moves, cancellationToken);
-                        ICollection<AbilitiesInPokemon> abilities = await GetAbilitiesInPokemon(pokemonResponse.Abilities, cancellationToken);
+                        if (pokemon is null)
+                        {
+                            pokemon = pokemonResponse.ToPokemon();
+                            isNewPokemon = true;
+                        }
+
+                        ICollection<MovesInPokemon> moves = await GetMovesInPokemon(pokemonResponse.Moves, unitOfWork, cancellationToken);
+                        ICollection<AbilitiesInPokemon> abilities = await GetAbilitiesInPokemon(pokemonResponse.Abilities, unitOfWork, cancellationToken);
 
                         pokemon.AbilitiesInPokemon.AddRange(abilities);
                         pokemon.MovesInPokemon.AddRange(moves);
 
-                        // TODO IMPORTANT -> Add PokeApi Ids of moves, abilities, etc and some logic not to trying to insert
-                        // duplicates on DB
-                        await unitOfWork.PokemonDao.CreateAsync(pokemon);
+                        if (isNewPokemon)
+                        {
+                            await unitOfWork.PokemonDao.CreateAsync(pokemon);
+                        }
+                        else
+                        {
+                            await unitOfWork.PokemonDao.UpdateAsync(pokemon);
+                        }
+
                         await unitOfWork.CommitAsync();
                     }
                     catch (Exception exception)
@@ -117,7 +204,10 @@ namespace PokeTactics.Api.HostedServices
             }
         }
 
-        private async Task<ICollection<MovesInPokemon>> GetMovesInPokemon(ICollection<MovePokeApiResponse> moveResponses, CancellationToken cancellationToken)
+        private async Task<ICollection<MovesInPokemon>> GetMovesInPokemon(
+            ICollection<MovePokeApiResponse> moveResponses,
+            IUnitOfWork unitOfWork,
+            CancellationToken cancellationToken)
         {
             IEnumerable<MoveUriPokeApiResponse> moveUriResponses = moveResponses.Select(x => x.MoveUriPokeApiResponse);
             ICollection<MovesInPokemon> movesInPokemon = [];
@@ -132,11 +222,25 @@ namespace PokeTactics.Api.HostedServices
                 movesInPokemon.Add(MovesInPokemonMapper.MovePokeApiResponseToMovesInPokemon(moveUriResponse.Name, moveInfoResponse));
             }
 
+            IEnumerable<string> moveNames = moveUriResponses.Select(x => x.Name);
+            ICollection<Move> movesInDatabase = await unitOfWork.MoveDao.LoadByNames(moveNames);
+            Dictionary<string, Move> movesInDatabaseByName = movesInDatabase.ToDictionary(m => m.Name, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var moveInPokemon in movesInPokemon)
+            {
+                if (moveInPokemon.Move != null && movesInDatabaseByName.TryGetValue(moveInPokemon.Move.Name, out var existingMove))
+                {
+                    moveInPokemon.Move = existingMove;
+                    moveInPokemon.MoveId = existingMove.Id;
+                }
+            }
+
             return movesInPokemon;
         }
 
         private async Task<ICollection<AbilitiesInPokemon>> GetAbilitiesInPokemon(
             ICollection<AbilitySlotPokeApiResponse> abilityResponses,
+            IUnitOfWork unitOfWork,
             CancellationToken cancellationToken)
         {
             ICollection<AbilitiesInPokemon> abilitiesInPokemon = [];
@@ -151,7 +255,25 @@ namespace PokeTactics.Api.HostedServices
                 abilitiesInPokemon.Add(AbilitiesInPokemonMapper.AbilityPokeApiResponseToAbilitiesInPokemon(abilityResponse, abilityEffectResponse));
             }
 
+            IEnumerable<string> abilityNames = abilitiesInPokemon.Select(x => x.Ability.Name);
+            IEnumerable<Ability> abilitiesInDatabase = await unitOfWork.AbilityDao.LoadByNames(abilityNames);
+            Dictionary<string, Ability> abilitiesByName = abilitiesInDatabase.ToDictionary(a => a.Name, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var abilityInPokemon in abilitiesInPokemon)
+            {
+                if (abilitiesByName.TryGetValue(abilityInPokemon.Ability.Name, out var existingAbility))
+                {
+                    abilityInPokemon.Ability = existingAbility;
+                    abilityInPokemon.AbilityId = existingAbility.Id;
+                }
+            }
+
             return abilitiesInPokemon;
+        }
+
+        private static string GetApiCallFailMessage(string path)
+        {
+            return $"Something failed calling PokeApi. Path: [{path}].";
         }
     }
 }

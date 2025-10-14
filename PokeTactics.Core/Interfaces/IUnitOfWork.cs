@@ -8,6 +8,10 @@ namespace PokeTactics.Core.Interfaces
         // Set here DAOs to use their methods as single transactions
         IPokemonDao PokemonDao { get; }
 
+        IAbilityDao AbilityDao { get; }
+
+        IMoveDao MoveDao { get; }
+
         Task<int> CommitAsync();
     }
 }

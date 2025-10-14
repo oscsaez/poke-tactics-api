@@ -78,17 +78,13 @@ namespace PokeTactics.Infrastructure.Daos
 
         public virtual Task UpdateAsync(TEntity entity)
         {
-            DbSet.Attach(entity);
-            DbContext.Entry(entity).State = EntityState.Modified;
-
+            DbSet.Update(entity);
             return Task.CompletedTask;
         }
 
         public virtual Task UpdateRangeAsync(IEnumerable<TEntity> entities)
         {
-            DbSet.AttachRange(entities);
-            DbContext.Entry(entities).State = EntityState.Modified;
-
+            DbSet.UpdateRange(entities);
             return Task.CompletedTask;
         }
     }

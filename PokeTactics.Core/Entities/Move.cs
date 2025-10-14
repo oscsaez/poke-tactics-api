@@ -12,9 +12,8 @@ namespace PokeTactics.Core.Entities
 
         public int? Accuracy { get; set; }
 
-        public int PowerPoints { get; set; }
+        public int? PowerPoints { get; set; }
 
-        [MaxLength(CoreConstants.MaxDescriptionLength)]
         public string? Description { get; set; }
 
         [MaxLength(CoreConstants.MaxTypeNameLength)]

@@ -5,7 +5,8 @@ namespace PokeTactics.Services.Mappers;
 
 public static class MoveMapper
 {
-    public static Move MovePokeApiResponseToMove(string moveName, MoveInfoPokeApiResponse moveInfoPokeApiResponse)
+    // DTO -> Entity
+    public static Move ToMove(this MoveInfoPokeApiResponse moveInfoPokeApiResponse, string moveName)
     {
         return new Move
         {
@@ -16,5 +17,16 @@ public static class MoveMapper
             PowerPoints = moveInfoPokeApiResponse.Pp,
             Type = moveInfoPokeApiResponse.Type.Name,
         };
+    }
+
+    // Entity -> Entity
+    public static void MapExisting(this Move trackedMove, Move nonTrackedMove)
+    {
+        trackedMove.Name = nonTrackedMove.Name;
+        trackedMove.Description = nonTrackedMove.Description;
+        trackedMove.Accuracy = nonTrackedMove.Accuracy;
+        trackedMove.Type = nonTrackedMove.Type;
+        trackedMove.Power = nonTrackedMove.Power;
+        trackedMove.PowerPoints = nonTrackedMove.PowerPoints;
     }
 }

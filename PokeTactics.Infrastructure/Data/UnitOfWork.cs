@@ -10,6 +10,8 @@ namespace PokeTactics.Infrastructure.Data
         
         // Set here private DAOs
         private IPokemonDao? _pokemonDao;
+        private IAbilityDao? _abilityDao;
+        private IMoveDao? _moveDao;
 
         public UnitOfWork(PokeTacticsContext dbContext)
         {
@@ -18,6 +20,10 @@ namespace PokeTactics.Infrastructure.Data
 
         // Set lazy loading for DAOs (instance DAOs only if they are used)
         public IPokemonDao PokemonDao => _pokemonDao ??= new PokemonDao(_dbContext);
+
+        public IAbilityDao AbilityDao => _abilityDao ??= new AbilityDao(_dbContext);
+
+        public IMoveDao MoveDao => _moveDao ??= new MoveDao(_dbContext);
 
         public async Task<int> CommitAsync()
         {

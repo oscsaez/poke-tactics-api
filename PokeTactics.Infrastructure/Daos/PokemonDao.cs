@@ -15,5 +15,17 @@ namespace PokeTactics.Infrastructure.Daos
         {
             return await DbSet.CountAsync();
         }
+
+        public async Task<Pokemon?> LoadByName(string name)
+        {
+            return await DbSet
+                .Include(p => p.MovesInPokemon)
+                    .ThenInclude(mp => mp.Move)
+                .Include(p => p.AbilitiesInPokemon)
+                    .ThenInclude(ap => ap.Ability)
+                .Include(p => p.Stats)
+                .Include(p => p.Sprite)
+                .SingleOrDefaultAsync(p => p.Name == name);
+        }
     }
 }

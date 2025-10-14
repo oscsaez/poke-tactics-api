@@ -11,7 +11,7 @@ public class MoveInfoPokeApiResponse
 
     public int? Accuracy { get; set; }
 
-    public int Pp { get; set; }
+    public int? Pp { get; set; }
 
     [JsonPropertyName(ContractsConstants.EffectEntriesPokeApiJsonPropertyName)]
     public required ICollection<EffectEntryPokeApiResponse> EffectEntries { get; set; }

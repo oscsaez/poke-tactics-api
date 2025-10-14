@@ -9,7 +9,7 @@ public static class MovesInPokemonMapper
     {
         return new MovesInPokemon
         {
-            Move = MoveMapper.MovePokeApiResponseToMove(moveName, moveInfoPokeApiResponse)
+            Move = moveInfoPokeApiResponse.ToMove(moveName)
         };
     }
 }
