@@ -9,7 +9,9 @@ public static class AbilitiesInPokemonMapper
     {
         return new AbilitiesInPokemon
         {
-            Ability = AbilityMapper.AbilityPokeApiResponseToAbility(abilitySlotPokeApiResponse, abilityEffectPokeApiResponse)
+            // TODO: Change this when creting/updating pokemon and their relationships with abilities
+            Ability = abilityEffectPokeApiResponse.ToAbility(abilitySlotPokeApiResponse.AbilityInfo.Name),
+            IsHidden = abilitySlotPokeApiResponse.IsHidden
         };
     }
 }

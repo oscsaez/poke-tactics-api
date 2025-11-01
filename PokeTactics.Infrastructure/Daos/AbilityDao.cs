@@ -17,4 +17,10 @@ public class AbilityDao : BaseDao<Ability>, IAbilityDao
             .Where(a => names.Contains(a.Name))
             .ToListAsync();
     }
+
+    public async Task<IDictionary<string, Ability>> LoadMapByName()
+    {
+        return await DbSet
+            .ToDictionaryAsync(a => a.Name, a => a);
+    }
 }

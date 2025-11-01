@@ -1,4 +1,5 @@
 using PokeTactics.Contracts.Move.PokeApi;
+using PokeTactics.Contracts.Utils.Extensions;
 using PokeTactics.Core.Entities;
 
 namespace PokeTactics.Services.Mappers;

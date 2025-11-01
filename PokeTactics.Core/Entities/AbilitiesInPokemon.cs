@@ -9,5 +9,7 @@ namespace PokeTactics.Core.Entities
         public int AbilityId { get; set; }
 
         public Ability Ability { get; set; } = default!;
+
+        public bool IsHidden { get; set; }
     }
 }

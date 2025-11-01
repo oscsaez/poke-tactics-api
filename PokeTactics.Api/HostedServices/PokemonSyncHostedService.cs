@@ -57,10 +57,79 @@ namespace PokeTactics.Api.HostedServices
 
         private async Task SyncIfNeeded(CancellationToken cancellationToken)
         {
+            await SyncAbilities(cancellationToken);
             await SyncMoves(cancellationToken);
             // await SyncPokemon(cancellationToken);
         }
 
+        // This method and SyncMoves are equal in structure, but if doing a template method for them will be problematic if in a future the
+        // structure of the response of pokeapi changes between abilities and moves
+        private async Task SyncAbilities(CancellationToken cancellationToken)
+        {
+            using IServiceScope scope = _serviceProvider.CreateScope();
+            IUnitOfWork unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+
+            IDictionary<string, Ability> existingAbilitiesMap = await unitOfWork.AbilityDao.LoadMapByName();
+
+            AbilitySummaryListPokeApiResponse allAbilitiesResponse =
+                await _httpClient.GetFromJsonAsync<AbilitySummaryListPokeApiResponse>(ApiConstants.AllAbilitiesInfoUri, cancellationToken)
+                ?? throw new PokeApiSyncException(GetApiCallFailMessage(ApiConstants.AllAbilitiesInfoUri));
+
+            ConcurrentBag<Ability> newAbilities = [];
+            ConcurrentBag<Ability> updatedAbilities = [];
+            List<Task> apiCalls = [];
+
+            foreach (AbilitySummaryPokeApiResponse abilitySummary in allAbilitiesResponse.Results)
+            {
+                await _semaphore.WaitAsync(cancellationToken);
+
+                apiCalls.Add(Task.Run(async () =>
+                {
+                    try
+                    {
+                        AbilityEffectPokeApiResponse abilityEffectEntries =
+                            await _httpClient.GetFromJsonAsync<AbilityEffectPokeApiResponse>(abilitySummary.Url, cancellationToken)
+                            ?? throw new PokeApiSyncException(GetApiCallFailMessage(abilitySummary.Url));
+
+                        Ability abilityFromResponse = abilityEffectEntries.ToAbility(abilitySummary.Name);
+
+                        if (existingAbilitiesMap.TryGetValue(abilitySummary.Name, out Ability existingAbility))
+                        {
+                            if (existingAbility.Compare(abilityFromResponse))
+                            {
+                                return;
+                            }
+
+                            existingAbility.MapExisting(abilityFromResponse);
+                            updatedAbilities.Add(existingAbility);
+                        }
+                        else
+                        {
+                            newAbilities.Add(abilityFromResponse);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error while trying to get new abilities or the ones to be updated.");
+                    }
+                    finally
+                    {
+                        _semaphore.Release();
+                    }
+                }, cancellationToken));
+            }
+
+            await Task.WhenAll(apiCalls);
+
+            await unitOfWork.AbilityDao.CreateRangeAsync(newAbilities);
+            await unitOfWork.AbilityDao.UpdateRangeAsync(updatedAbilities);
+            await unitOfWork.CommitAsync();
+
+            _logger.LogInformation("Creation/Update of abilities has been done!");
+        }
+
+        // This method and SyncAbilities are equal in structure, but if doing a template method for them will be problematic if in a future the
+        // structure of the response of pokeapi changes between abilities and moves
         private async Task SyncMoves(CancellationToken cancellationToken)
         {
             using IServiceScope scope = _serviceProvider.CreateScope();
@@ -68,7 +137,8 @@ namespace PokeTactics.Api.HostedServices
 
             IDictionary<string, Move> existingMovesMap = await unitOfWork.MoveDao.LoadMapByName();
 
-            MoveSummaryListPokeApiResponse allMovesResponse = await _httpClient.GetFromJsonAsync<MoveSummaryListPokeApiResponse>(ApiConstants.AllMovesInfoUri, cancellationToken)
+            MoveSummaryListPokeApiResponse allMovesResponse =
+                await _httpClient.GetFromJsonAsync<MoveSummaryListPokeApiResponse>(ApiConstants.AllMovesInfoUri, cancellationToken)
                 ?? throw new PokeApiSyncException(GetApiCallFailMessage(ApiConstants.AllMovesInfoUri));
 
             ConcurrentBag<Move> newMoves = [];
@@ -84,7 +154,7 @@ namespace PokeTactics.Api.HostedServices
                     try
                     {
                         MoveInfoPokeApiResponse moveInfoResponse = await _httpClient.GetFromJsonAsync<MoveInfoPokeApiResponse>(moveSummary.Url, cancellationToken)
-                            ?? throw new PokeApiSyncException();
+                            ?? throw new PokeApiSyncException(GetApiCallFailMessage(moveSummary.Url));
 
                         Move moveFromResponse = moveInfoResponse.ToMove(moveSummary.Name);
 
@@ -120,7 +190,7 @@ namespace PokeTactics.Api.HostedServices
             await unitOfWork.MoveDao.UpdateRangeAsync(updatedMoves.ToList());
             await unitOfWork.CommitAsync();
 
-            _logger.LogInformation("Creation/Update of pokemon moves has been done!");
+            _logger.LogInformation("Creation/Update of moves has been done!");
         }
 
         private async Task SyncPokemon(CancellationToken cancellationToken)
