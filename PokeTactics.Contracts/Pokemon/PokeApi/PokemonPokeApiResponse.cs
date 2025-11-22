@@ -9,7 +9,7 @@ namespace PokeTactics.Contracts.Pokemon.PokeApi
 {
     public class PokemonPokeApiResponse
     {
-        public int Order { get; set; }
+        public int? Order { get; set; }
 
         public required string Name { get; set; }
 
@@ -18,7 +18,7 @@ namespace PokeTactics.Contracts.Pokemon.PokeApi
         public double Weight { get; set; }
 
         [JsonPropertyName("base_experience")]
-        public int BaseExperience { get; set; }
+        public int? BaseExperience { get; set; }
 
         public required ICollection<TypePokeApiResponse> Types { get; set; }
 
