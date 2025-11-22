@@ -13,14 +13,14 @@ public class AbilityDao : BaseDao<Ability>, IAbilityDao
 
     public async Task<ICollection<Ability>> LoadByNames(IEnumerable<string> names)
     {
-        return await DbSet
+        return await Query()
             .Where(a => names.Contains(a.Name))
             .ToListAsync();
     }
 
     public async Task<IDictionary<string, Ability>> LoadMapByName()
     {
-        return await DbSet
+        return await Query()
             .ToDictionaryAsync(a => a.Name, a => a);
     }
 }

@@ -9,8 +9,8 @@ namespace PokeTactics.Infrastructure.Daos
 {
     public abstract class BaseDao<TEntity> : IBaseDao<TEntity> where TEntity : Entity
     {
+        private readonly DbSet<TEntity> DbSet;
         protected readonly PokeTacticsContext DbContext;
-        protected readonly DbSet<TEntity> DbSet;
 
         protected BaseDao(PokeTacticsContext dbContext)
         {
@@ -86,6 +86,11 @@ namespace PokeTactics.Infrastructure.Daos
         {
             DbSet.UpdateRange(entities);
             return Task.CompletedTask;
+        }
+
+        protected virtual IQueryable<TEntity> Query()
+        {
+            return DbSet;
         }
     }
 }

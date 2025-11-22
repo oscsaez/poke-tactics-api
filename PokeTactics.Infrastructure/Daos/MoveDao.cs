@@ -13,14 +13,14 @@ public class MoveDao : BaseDao<Move>, IMoveDao
 
     public async Task<ICollection<Move>> LoadByNames(IEnumerable<string> names)
     {
-        return await DbSet
+        return await Query()
             .Where(m => names.Contains(m.Name))
             .ToListAsync();
     }
 
     public async Task<IDictionary<string, Move>> LoadMapByName()
     {
-        return await DbSet
+        return await Query()
             .ToDictionaryAsync(m => m.Name, m => m);
     }
 }
