@@ -12,4 +12,17 @@ public static class MovesInPokemonMapper
             Move = moveInfoPokeApiResponse.ToMove(moveName)
         };
     }
+
+    public static MovesInPokemon ToMoveInPokemon(this MovePokeApiResponse movePokeApiResponse)
+    {
+        return new MovesInPokemon
+        {
+            Move = movePokeApiResponse.ToMove()
+        };
+    }
+
+    public static ICollection<MovesInPokemon> ToMovesInPokemon(this ICollection<MovePokeApiResponse> movePokeApiResponses)
+    {
+        return [.. movePokeApiResponses.Select(ToMoveInPokemon)];
+    }
 }

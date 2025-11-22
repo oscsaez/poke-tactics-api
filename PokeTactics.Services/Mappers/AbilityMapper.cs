@@ -17,6 +17,14 @@ public static class AbilityMapper
         };
     }
 
+    public static Ability ToAbility(this AbilitySlotPokeApiResponse abilitySlotPokeApiResponse)
+    {
+        return new Ability
+        {
+            Name = abilitySlotPokeApiResponse.AbilityInfo.Name
+        };
+    }
+
     // Entity -> Entity
     public static void MapExisting(this Ability trackedAbility, Ability nonTrackedAbility)
     {

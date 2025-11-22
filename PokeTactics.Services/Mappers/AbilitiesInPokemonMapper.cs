@@ -5,13 +5,17 @@ namespace PokeTactics.Services.Mappers;
 
 public static class AbilitiesInPokemonMapper
 {
-    public static AbilitiesInPokemon AbilityPokeApiResponseToAbilitiesInPokemon(AbilitySlotPokeApiResponse abilitySlotPokeApiResponse, AbilityEffectPokeApiResponse abilityEffectPokeApiResponse)
+    public static AbilitiesInPokemon ToAbilityInPokemon(this AbilitySlotPokeApiResponse abilitySlotPokeApiResponse)
     {
         return new AbilitiesInPokemon
         {
-            // TODO: Change this when creting/updating pokemon and their relationships with abilities
-            Ability = abilityEffectPokeApiResponse.ToAbility(abilitySlotPokeApiResponse.AbilityInfo.Name),
+            Ability = abilitySlotPokeApiResponse.ToAbility(),
             IsHidden = abilitySlotPokeApiResponse.IsHidden
         };
+    }
+
+    public static ICollection<AbilitiesInPokemon> ToAbilitiesInPokemon(this ICollection<AbilitySlotPokeApiResponse> abilitySlotPokeApiResponses)
+    {
+        return [.. abilitySlotPokeApiResponses.Select(ToAbilityInPokemon)];
     }
 }
