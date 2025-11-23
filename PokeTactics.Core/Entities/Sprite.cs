@@ -6,7 +6,7 @@ namespace PokeTactics.Core.Entities
     public class Sprite : Entity
     {
         [MaxLength(CoreConstants.MaxSpriteUriLength)]
-        public required string OfficialArtworkUri { get; set; }
+        public string? OfficialArtworkUri { get; set; }
 
         [MaxLength(CoreConstants.MaxSpriteUriLength)]
         public string? BackMaleUri { get; set; }
