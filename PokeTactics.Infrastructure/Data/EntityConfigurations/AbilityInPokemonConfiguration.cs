@@ -4,9 +4,9 @@ using PokeTactics.Core.Entities;
 
 namespace PokeTactics.Infrastructure.Data.EntityConfigurations
 {
-    public class AbilitiesInPokemonConfiguration : IEntityTypeConfiguration<AbilitiesInPokemon>
+    public class AbilityInPokemonConfiguration : IEntityTypeConfiguration<AbilityInPokemon>
     {
-        public void Configure(EntityTypeBuilder<AbilitiesInPokemon> builder)
+        public void Configure(EntityTypeBuilder<AbilityInPokemon> builder)
         {
             builder.HasKey(x => new { x.PokemonId, x.AbilityId });
 

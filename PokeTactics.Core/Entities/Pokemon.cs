@@ -26,9 +26,9 @@ namespace PokeTactics.Core.Entities
         public ICollection<Stat> Stats { get; set; } = [];
 
         [MaxListCount(CoreConstants.MaxAbilitiesListCount)]
-        public ICollection<AbilitiesInPokemon> AbilitiesInPokemon { get; set; } = [];
+        public ICollection<AbilityInPokemon> AbilitiesInPokemon { get; set; } = [];
 
-        public ICollection<MovesInPokemon> MovesInPokemon { get; set; } = [];
+        public ICollection<MoveInPokemon> MovesInPokemon { get; set; } = [];
 
         public required Sprite Sprite { get; set; }
     }

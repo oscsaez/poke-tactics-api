@@ -19,6 +19,6 @@ namespace PokeTactics.Core.Entities
         [MaxLength(CoreConstants.MaxTypeNameLength)]
         public required string Type { get; set; }
 
-        public ICollection<MovesInPokemon> MovesInPokemon { get; set; } = [];
+        public ICollection<MoveInPokemon> MovesInPokemon { get; set; } = [];
     }
 }

@@ -4,9 +4,9 @@ using PokeTactics.Core.Entities;
 
 namespace PokeTactics.Infrastructure.Data.EntityConfigurations
 {
-    public class MovesInPokemonConfiguration : IEntityTypeConfiguration<MovesInPokemon>
+    public class MoveInPokemonConfiguration : IEntityTypeConfiguration<MoveInPokemon>
     {
-        public void Configure(EntityTypeBuilder<MovesInPokemon> builder)
+        public void Configure(EntityTypeBuilder<MoveInPokemon> builder)
         {
             builder.HasKey(x => new { x.PokemonId, x.MoveId });
 

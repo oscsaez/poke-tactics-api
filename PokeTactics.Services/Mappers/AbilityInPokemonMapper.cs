@@ -3,18 +3,18 @@ using PokeTactics.Core.Entities;
 
 namespace PokeTactics.Services.Mappers;
 
-public static class AbilitiesInPokemonMapper
+public static class AbilityInPokemonMapper
 {
-    public static AbilitiesInPokemon ToAbilityInPokemon(this AbilitySlotPokeApiResponse abilitySlotPokeApiResponse)
+    public static AbilityInPokemon ToAbilityInPokemon(this AbilitySlotPokeApiResponse abilitySlotPokeApiResponse)
     {
-        return new AbilitiesInPokemon
+        return new AbilityInPokemon
         {
             Ability = abilitySlotPokeApiResponse.ToAbility(),
             IsHidden = abilitySlotPokeApiResponse.IsHidden
         };
     }
 
-    public static ICollection<AbilitiesInPokemon> ToAbilitiesInPokemon(this ICollection<AbilitySlotPokeApiResponse> abilitySlotPokeApiResponses)
+    public static ICollection<AbilityInPokemon> ToAbilitiesInPokemon(this ICollection<AbilitySlotPokeApiResponse> abilitySlotPokeApiResponses)
     {
         return [.. abilitySlotPokeApiResponses.Select(ToAbilityInPokemon)];
     }

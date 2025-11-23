@@ -10,6 +10,6 @@ namespace PokeTactics.Core.Entities
 
         public string? Description { get; set; }
 
-        public ICollection<AbilitiesInPokemon> AbilitiesInPokemon { get; set; } = [];
+        public ICollection<AbilityInPokemon> AbilitiesInPokemon { get; set; } = [];
     }
 }

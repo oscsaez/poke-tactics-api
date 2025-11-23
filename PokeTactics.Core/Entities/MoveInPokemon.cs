@@ -1,7 +1,6 @@
 namespace PokeTactics.Core.Entities
 {
-    // TODO: Rename this class to MoveInPokemon
-    public class MovesInPokemon
+    public class MoveInPokemon : Entity
     {
         public int PokemonId { get; set; }
 
