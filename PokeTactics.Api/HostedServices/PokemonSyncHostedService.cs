@@ -1,5 +1,6 @@
 
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using PokeTactics.Api.Utils;
 using PokeTactics.Contracts.Ability.PokeApi;
@@ -57,18 +58,18 @@ namespace PokeTactics.Api.HostedServices
 
         private async Task SyncIfNeeded(CancellationToken cancellationToken)
         {
-            await SyncAbilities(cancellationToken);
-            await SyncMoves(cancellationToken);
-            await SyncPokemon(cancellationToken);
+            using IServiceScope scope = _serviceProvider.CreateScope();
+            IUnitOfWork unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+
+            await SyncAbilities(unitOfWork, cancellationToken);
+            await SyncMoves(unitOfWork, cancellationToken);
+            await SyncPokemon(unitOfWork, cancellationToken);
         }
 
         // This method and SyncMoves are equal in structure, but if doing a template method for them will be problematic if in a future the
         // structure of the response of pokeapi changes between abilities and moves
-        private async Task SyncAbilities(CancellationToken cancellationToken)
+        private async Task SyncAbilities(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
         {
-            using IServiceScope scope = _serviceProvider.CreateScope();
-            IUnitOfWork unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-
             IDictionary<string, Ability> existingAbilitiesMap = await unitOfWork.AbilityDao.LoadMapByName();
 
             AbilitySummaryListPokeApiResponse allAbilitiesResponse =
@@ -130,11 +131,8 @@ namespace PokeTactics.Api.HostedServices
 
         // This method and SyncAbilities are equal in structure, but if doing a template method for them will be problematic if in a future the
         // structure of the response of pokeapi changes between abilities and moves
-        private async Task SyncMoves(CancellationToken cancellationToken)
+        private async Task SyncMoves(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
         {
-            using IServiceScope scope = _serviceProvider.CreateScope();
-            IUnitOfWork unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-
             IDictionary<string, Move> existingMovesMap = await unitOfWork.MoveDao.LoadMapByName();
 
             MoveSummaryListPokeApiResponse allMovesResponse =
@@ -193,11 +191,8 @@ namespace PokeTactics.Api.HostedServices
             _logger.LogInformation("Creation/Update of moves has been done!");
         }
 
-        private async Task SyncPokemon(CancellationToken cancellationToken)
+        private async Task SyncPokemon(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
         {
-            using IServiceScope scope = _serviceProvider.CreateScope();
-            IUnitOfWork unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-
             IDictionary<string, Pokemon> existingPokemonMap = await unitOfWork.PokemonDao.LoadMapByName();
             IDictionary<string, Ability> existingAbilitiesMap = await unitOfWork.AbilityDao.LoadMapByName();
             IDictionary<string, Move> existingMovesMap = await unitOfWork.MoveDao.LoadMapByName();
@@ -206,8 +201,9 @@ namespace PokeTactics.Api.HostedServices
                 await _httpClient.GetFromJsonAsync<PokemonSummaryListPokeApiResponse>(ApiConstants.AllPokemonInfoUri, cancellationToken)
                 ?? throw new PokeApiSyncException(GetApiCallFailMessage(ApiConstants.AllPokemonInfoUri));
 
-            ConcurrentBag<Pokemon> newPokemonList = [];
-            ConcurrentBag<Pokemon> updatedPokemonList = [];
+            ConcurrentBag<Pokemon> newPokemonConcurrentList = [];
+            ConcurrentBag<Pokemon> updatedPokemonConcurrentList = [];
+            ConcurrentBag<PokemonPokeApiResponse> newPokemonConcurrentResponses = [];
             List<Task> apiCalls = [];
 
             foreach (PokemonSummaryPokeApiResponse pokemonSummary in allPokemonResponse.Results)
@@ -222,23 +218,24 @@ namespace PokeTactics.Api.HostedServices
                             await _httpClient.GetFromJsonAsync<PokemonPokeApiResponse>(pokemonSummary.Url, cancellationToken)
                             ?? throw new PokeApiSyncException(GetApiCallFailMessage(pokemonSummary.Url));
 
-                        Pokemon pokemonFromResponse = pokemonInfoResponse.ToPokemon();
-
                         if (existingPokemonMap.TryGetValue(pokemonSummary.Name, out Pokemon existingPokemon))
                         {
+                            Pokemon pokemonFromResponse = pokemonInfoResponse.ToPokemonWithAbilitiesAndMoves();
+
                             if (existingPokemon.Compare(pokemonFromResponse))
                             {
                                 return;
                             }
 
                             existingPokemon.MapExisting(pokemonFromResponse, existingAbilitiesMap, existingMovesMap);
-                            updatedPokemonList.Add(existingPokemon);
+                            updatedPokemonConcurrentList.Add(existingPokemon);
                         }
                         else
                         {
-                            FillAbilities(pokemonFromResponse, existingAbilitiesMap);
-                            FillMoves(pokemonFromResponse, existingMovesMap);
-                            newPokemonList.Add(pokemonFromResponse);
+                            Pokemon pokemonFromResponse = pokemonInfoResponse.ToPokemon();
+
+                            newPokemonConcurrentList.Add(pokemonFromResponse);
+                            newPokemonConcurrentResponses.Add(pokemonInfoResponse);
                         }
                     }
                     catch (Exception ex)
@@ -254,33 +251,99 @@ namespace PokeTactics.Api.HostedServices
 
             await Task.WhenAll(apiCalls);
 
-            await unitOfWork.PokemonDao.CreateRangeAsync(newPokemonList.ToList());
-            await unitOfWork.PokemonDao.UpdateRangeAsync(updatedPokemonList.ToList());
+            await unitOfWork.PokemonDao.CreateRangeAsync(newPokemonConcurrentList.ToList());
+            await unitOfWork.PokemonDao.UpdateRangeAsync(updatedPokemonConcurrentList.ToList());
             await unitOfWork.CommitAsync();
+
+            if(!newPokemonConcurrentList.IsNullOrEmpty())
+            {
+                List<PokemonPokeApiResponse> newPokemonResponses = newPokemonConcurrentResponses.ToList();
+
+                await CreateAbilitiesInPokemon(newPokemonResponses, unitOfWork);
+                await CreateMovesInPokemon(newPokemonResponses, unitOfWork);
+            }
 
             _logger.LogInformation("Creation/Update of pokemon has been done!");
         }
 
-        private static void FillAbilities(Pokemon pokemon, IDictionary<string, Ability> abilitiesMap)
+        private async Task CreateAbilitiesInPokemon(ICollection<PokemonPokeApiResponse> pokemonResponses, IUnitOfWork unitOfWork)
         {
-            foreach (AbilitiesInPokemon abilityInPokemon in pokemon.AbilitiesInPokemon)
+            IEnumerable<KeyValuePair<string, AbilitySlotPokeApiResponse>> pokemonAndAbilityNamesPairs = 
+                from p in pokemonResponses
+                from a in p.Abilities
+                select new KeyValuePair<string, AbilitySlotPokeApiResponse>(p.Name, a);
+
+            IDictionary<string, Pokemon> existingPokemonMap = await unitOfWork.PokemonDao.LoadMapByName();
+            IDictionary<string, Ability> existingAbilitiesMap = await  unitOfWork.AbilityDao.LoadMapByName();
+            
+            List<AbilityInPokemon> newAbilitiesInPokemon = [];
+            foreach (KeyValuePair<string, AbilitySlotPokeApiResponse> pokemonAndAbilityNamesPair in pokemonAndAbilityNamesPairs)
             {
-                if (abilitiesMap.TryGetValue(abilityInPokemon.Ability.Name, out Ability ability))
+                if (existingPokemonMap.TryGetValue(pokemonAndAbilityNamesPair.Key, out Pokemon pokemon))
                 {
-                    abilityInPokemon.Ability = ability;
+                    if (existingAbilitiesMap.TryGetValue(pokemonAndAbilityNamesPair.Value.AbilityInfo.Name, out Ability ability))
+                    {
+                        if (!newAbilitiesInPokemon.Any(x => IsEqual(x, ability.Id, pokemon.Id, pokemonAndAbilityNamesPair.Value.IsHidden)))
+                        {
+                            newAbilitiesInPokemon.Add(new AbilityInPokemon
+                            {
+                                AbilityId = ability.Id,
+                                PokemonId = pokemon.Id,
+                                IsHidden = pokemonAndAbilityNamesPair.Value.IsHidden
+                            });
+                        }
+                    }
                 }
             }
+
+            await unitOfWork.AbilityInPokemonDao.CreateRangeAsync(newAbilitiesInPokemon);
+            await unitOfWork.CommitAsync();
         }
 
-        private static void FillMoves(Pokemon pokemon, IDictionary<string, Move> movesMap)
+        private async Task CreateMovesInPokemon(ICollection<PokemonPokeApiResponse> pokemonResponses, IUnitOfWork unitOfWork)
         {
-            foreach (MovesInPokemon moveInPokemon in pokemon.MovesInPokemon)
+            IEnumerable<KeyValuePair<string, string>> pokemonAndMoveNamesPairs = 
+                from p in pokemonResponses
+                from m in p.Moves
+                select new KeyValuePair<string, string>(p.Name, m.MoveUriPokeApiResponse.Name);
+
+            IDictionary<string, Pokemon> existingPokemonMap = await unitOfWork.PokemonDao.LoadMapByName();
+            IDictionary<string, Move> existingMovesMap = await  unitOfWork.MoveDao.LoadMapByName();
+            
+            List<MoveInPokemon> newMovesInPokemon = [];
+            foreach (KeyValuePair<string, string> pokemonAndMoveNamesPair in pokemonAndMoveNamesPairs)
             {
-                if (movesMap.TryGetValue(moveInPokemon.Move.Name, out Move move))
+                if (existingPokemonMap.TryGetValue(pokemonAndMoveNamesPair.Key, out Pokemon pokemon))
                 {
-                    moveInPokemon.Move = move;
+                    if (existingMovesMap.TryGetValue(pokemonAndMoveNamesPair.Value, out Move move))
+                    {
+                        if (!newMovesInPokemon.Any(x => IsEqual(x, move.Id, pokemon.Id)))
+                        {
+                            newMovesInPokemon.Add(new MoveInPokemon
+                            {
+                                MoveId = move.Id,
+                                PokemonId = pokemon.Id
+                            });
+                        }
+                    }
                 }
             }
+
+            await unitOfWork.MoveInPokemonDao.CreateRangeAsync(newMovesInPokemon);
+            await unitOfWork.CommitAsync();
+        }
+
+        private static bool IsEqual(AbilityInPokemon abilityInPokemon, int abilityId, int pokemonId, bool isHidden)
+        {
+            return abilityInPokemon.AbilityId == abilityId &&
+                abilityInPokemon.PokemonId == pokemonId &&
+                abilityInPokemon.IsHidden == isHidden;
+        }
+
+        private static bool IsEqual(MoveInPokemon moveInPokemon, int moveId, int pokemonId)
+        {
+            return moveInPokemon.MoveId == moveId &&
+                moveInPokemon.PokemonId == pokemonId;
         }
 
         private static string GetApiCallFailMessage(string path)

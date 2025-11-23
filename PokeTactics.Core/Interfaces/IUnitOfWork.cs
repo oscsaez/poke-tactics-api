@@ -12,6 +12,10 @@ namespace PokeTactics.Core.Interfaces
 
         IMoveDao MoveDao { get; }
 
+        IAbilityInPokemonDao AbilityInPokemonDao { get; }
+
+        IMoveInPokemonDao MoveInPokemonDao { get; }
+
         Task<int> CommitAsync();
     }
 }

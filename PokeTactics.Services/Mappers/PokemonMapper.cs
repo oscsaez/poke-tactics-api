@@ -6,6 +6,15 @@ namespace PokeTactics.Services.Mappers;
 public static class PokemonMapper
 {
     // DTO -> Entity
+    public static Pokemon ToPokemonWithAbilitiesAndMoves(this PokemonPokeApiResponse pokemonPokeApiResponse)
+    {
+        Pokemon pokemon = pokemonPokeApiResponse.ToPokemon();
+        pokemon.AbilitiesInPokemon = pokemonPokeApiResponse.Abilities.ToAbilitiesInPokemon();
+        pokemon.MovesInPokemon = pokemonPokeApiResponse.Moves.ToMovesInPokemon();
+
+        return pokemon;
+    }
+
     public static Pokemon ToPokemon(this PokemonPokeApiResponse pokemonPokeApiResponse)
     {
         return new Pokemon
@@ -16,9 +25,7 @@ public static class PokemonMapper
             Weight = pokemonPokeApiResponse.Weight,
             Types = [.. pokemonPokeApiResponse.Types.Select(x => x.TypeInfoPokeApiResponse.Name)],
             Sprite = pokemonPokeApiResponse.Sprite.ToSprite(),
-            Stats = pokemonPokeApiResponse.Stats.ToStats(),
-            AbilitiesInPokemon = pokemonPokeApiResponse.Abilities.ToAbilitiesInPokemon(),
-            MovesInPokemon = pokemonPokeApiResponse.Moves.ToMovesInPokemon()
+            Stats = pokemonPokeApiResponse.Stats.ToStats()
         };
     }
 
@@ -43,12 +50,12 @@ public static class PokemonMapper
     {
         IEnumerable<string> trackedAbilityNames = trackedPokemon.AbilitiesInPokemon.Select(x => x.Ability.Name);
 
-        foreach (AbilitiesInPokemon nonTrackedAbilityInPokemon in nonTrackedPokemon.AbilitiesInPokemon)
+        foreach (AbilityInPokemon nonTrackedAbilityInPokemon in nonTrackedPokemon.AbilitiesInPokemon)
         {
             if (!trackedAbilityNames.Contains(nonTrackedAbilityInPokemon.Ability.Name) &&
                 abilitiesMap.TryGetValue(nonTrackedAbilityInPokemon.Ability.Name, out Ability ability))
             {
-                AbilitiesInPokemon newAbilityInPokemon = new()
+                AbilityInPokemon newAbilityInPokemon = new()
                 {
                     AbilityId = ability.Id,
                     IsHidden = nonTrackedAbilityInPokemon.IsHidden
@@ -63,12 +70,12 @@ public static class PokemonMapper
     {
         IEnumerable<string> trackedMoveNames = trackedPokemon.MovesInPokemon.Select(x => x.Move.Name);
 
-        foreach (MovesInPokemon nonTrackedMoveInPokemon in nonTrackedPokemon.MovesInPokemon)
+        foreach (MoveInPokemon nonTrackedMoveInPokemon in nonTrackedPokemon.MovesInPokemon)
         {
             if (!trackedMoveNames.Contains(nonTrackedMoveInPokemon.Move.Name) &&
                 movesMap.TryGetValue(nonTrackedMoveInPokemon.Move.Name, out Move move))
             {
-                MovesInPokemon moveInPokemon = new()
+                MoveInPokemon moveInPokemon = new()
                 {
                     MoveId = move.Id
                 };
