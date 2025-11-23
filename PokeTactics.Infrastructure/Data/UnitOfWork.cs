@@ -12,6 +12,8 @@ namespace PokeTactics.Infrastructure.Data
         private IPokemonDao? _pokemonDao;
         private IAbilityDao? _abilityDao;
         private IMoveDao? _moveDao;
+        private IAbilityInPokemonDao? _abilityInPokemonDao;
+        private IMoveInPokemonDao? _moveInPokemonDao;
 
         public UnitOfWork(PokeTacticsContext dbContext)
         {
@@ -24,6 +26,10 @@ namespace PokeTactics.Infrastructure.Data
         public IAbilityDao AbilityDao => _abilityDao ??= new AbilityDao(_dbContext);
 
         public IMoveDao MoveDao => _moveDao ??= new MoveDao(_dbContext);
+
+        public IAbilityInPokemonDao AbilityInPokemonDao => _abilityInPokemonDao ??= new AbilityInPokemonDao(_dbContext);
+
+        public IMoveInPokemonDao MoveInPokemonDao => _moveInPokemonDao ??= new MoveInPokemonDao(_dbContext);
 
         public async Task<int> CommitAsync()
         {
