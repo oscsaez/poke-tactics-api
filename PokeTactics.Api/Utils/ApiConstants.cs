@@ -14,5 +14,8 @@ namespace PokeTactics.Api.Utils
         public static readonly string AllAbilitiesInfoUri = $"ability/?limit={int.MaxValue}";
         public static readonly string AllPokemonInfoUri = $"pokemon/?limit={int.MaxValue}";
         public static readonly string AllMovesInfoUri = $"move/?limit={int.MaxValue}";
+
+        // SyncServices
+        public const int NumberOfRequestsGrantedConcurrently = 5;
     }
 }
