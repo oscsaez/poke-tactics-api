@@ -15,14 +15,12 @@ public class AbilitySyncService : IAbilitySyncService
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<AbilitySyncService> _logger;
     private readonly HttpClient _httpClient;
-    private readonly SemaphoreSlim _semaphore;
 
     public AbilitySyncService(IUnitOfWork unitOfWork, ILogger<AbilitySyncService> logger, IHttpClientFactory httpClientFactory)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
         _httpClient = httpClientFactory.CreateClient(ApiConstants.ExternalApiName);
-        _semaphore = new SemaphoreSlim(ApiConstants.NumberOfRequestsGrantedConcurrently);
     }
     
     // This method and MoveSyncService.Sync are equal in structure, but if doing a template method for them will be problematic if in a future the
@@ -37,18 +35,19 @@ public class AbilitySyncService : IAbilitySyncService
 
         ConcurrentBag<Ability> newAbilities = [];
         ConcurrentBag<Ability> updatedAbilities = [];
-        List<Task> apiCalls = [];
-
-        foreach (AbilitySummaryPokeApiResponse abilitySummary in allAbilitiesResponse.Results)
+        
+        ParallelOptions parallelOptions = new ParallelOptions
         {
-            await _semaphore.WaitAsync(cancellationToken);
+            MaxDegreeOfParallelism = ApiConstants.NumberOfRequestsGrantedConcurrently,
+            CancellationToken = cancellationToken
+        };
 
-            apiCalls.Add(Task.Run(async () =>
-            {
-                try
+        await Parallel.ForEachAsync(allAbilitiesResponse.Results, parallelOptions, async (abilitySummary, ct) =>
+        {
+            try
                 {
                     AbilityEffectPokeApiResponse abilityEffectEntries =
-                        await _httpClient.GetFromJsonAsync<AbilityEffectPokeApiResponse>(abilitySummary.Url, cancellationToken)
+                        await _httpClient.GetFromJsonAsync<AbilityEffectPokeApiResponse>(abilitySummary.Url, ct)
                         ?? throw new PokeApiSyncException(MessagesHelper.GetApiCallFailMessage(abilitySummary.Url));
 
                     Ability abilityFromResponse = abilityEffectEntries.ToAbility(abilitySummary.Name);
@@ -72,14 +71,7 @@ public class AbilitySyncService : IAbilitySyncService
                 {
                     _logger.LogError(ex, "Error while trying to get new abilities or the ones to be updated.");
                 }
-                finally
-                {
-                    _semaphore.Release();
-                }
-            }, cancellationToken));
-        }
-
-        await Task.WhenAll(apiCalls);
+        });
 
         await _unitOfWork.AbilityDao.CreateRangeAsync(newAbilities);
         await _unitOfWork.AbilityDao.UpdateRangeAsync(updatedAbilities);

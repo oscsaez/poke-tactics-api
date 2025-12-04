@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Options;
-using PokeTactics.Api.Utils;
 using PokeTactics.Core.Definitions;
 using PokeTactics.Core.Interfaces.SyncServices;
 

@@ -32,6 +32,6 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IAbilitySyncService, AbilitySyncService>();
         services.AddScoped<IMoveSyncService, MoveSyncService>();
-        services.AddScoped<IPokemonSyncService,PokemonSyncService>();
+        services.AddScoped<IPokemonSyncService, PokemonSyncService>();
     }
 }

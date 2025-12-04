@@ -15,14 +15,12 @@ public class MoveSyncService : IMoveSyncService
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<MoveSyncService> _logger;
     private readonly HttpClient _httpClient;
-    private readonly SemaphoreSlim _semaphore;
 
     public MoveSyncService(IUnitOfWork unitOfWork, ILogger<MoveSyncService> logger, IHttpClientFactory httpClientFactory)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
         _httpClient = httpClientFactory.CreateClient(ApiConstants.ExternalApiName);
-        _semaphore = new SemaphoreSlim(ApiConstants.NumberOfRequestsGrantedConcurrently);
     }
 
     // This method and AbilitySyncService.Sync are equal in structure, but if doing a template method for them will be problematic if in a future the
@@ -37,17 +35,18 @@ public class MoveSyncService : IMoveSyncService
 
         ConcurrentBag<Move> newMoves = [];
         ConcurrentBag<Move> updatedMoves = [];
-        List<Task> apiCalls = [];
 
-        foreach (MoveSummaryPokeApiResponse moveSummary in allMovesResponse.Results)
+        ParallelOptions parallelOptions = new ParallelOptions
         {
-            await _semaphore.WaitAsync(cancellationToken);
+            MaxDegreeOfParallelism = ApiConstants.NumberOfRequestsGrantedConcurrently,
+            CancellationToken = cancellationToken
+        };
 
-            apiCalls.Add(Task.Run(async () =>
-            {
-                try
+        await Parallel.ForEachAsync(allMovesResponse.Results, parallelOptions, async (moveSummary, ct) =>
+        {
+            try
                 {
-                    MoveInfoPokeApiResponse moveInfoResponse = await _httpClient.GetFromJsonAsync<MoveInfoPokeApiResponse>(moveSummary.Url, cancellationToken)
+                    MoveInfoPokeApiResponse moveInfoResponse = await _httpClient.GetFromJsonAsync<MoveInfoPokeApiResponse>(moveSummary.Url, ct)
                         ?? throw new PokeApiSyncException(MessagesHelper.GetApiCallFailMessage(moveSummary.Url));
 
                     Move moveFromResponse = moveInfoResponse.ToMove(moveSummary.Name);
@@ -71,14 +70,7 @@ public class MoveSyncService : IMoveSyncService
                 {
                     _logger.LogError(exception, "Error while trying to get new moves or the ones to be updated.");
                 }
-                finally
-                {
-                    _semaphore.Release();
-                }
-            }, cancellationToken));
-        }
-
-        await Task.WhenAll(apiCalls);
+        });
 
         await _unitOfWork.MoveDao.CreateRangeAsync(newMoves.ToList());
         await _unitOfWork.MoveDao.UpdateRangeAsync(updatedMoves.ToList());
