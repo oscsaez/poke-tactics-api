@@ -28,14 +28,11 @@ public class AbilitySyncService : IAbilitySyncService
     public async Task Sync(CancellationToken cancellationToken)
     {
         IDictionary<string, Ability> existingAbilitiesMap = await _unitOfWork.AbilityDao.LoadMapByName();
-
-        AbilitySummaryListPokeApiResponse allAbilitiesResponse =
-            await _httpClient.GetFromJsonAsync<AbilitySummaryListPokeApiResponse>(ApiConstants.AllAbilitiesInfoUri, cancellationToken)
-            ?? throw new PokeApiSyncException(MessagesHelper.GetApiCallFailMessage(ApiConstants.AllAbilitiesInfoUri));
+        AbilitySummaryListPokeApiResponse allAbilitiesResponse = await GetAbilitiesSummaryListFromApi(cancellationToken);
 
         ConcurrentBag<Ability> newAbilities = [];
         ConcurrentBag<Ability> updatedAbilities = [];
-        
+
         ParallelOptions parallelOptions = new ParallelOptions
         {
             MaxDegreeOfParallelism = ApiConstants.NumberOfRequestsGrantedConcurrently,
@@ -45,32 +42,28 @@ public class AbilitySyncService : IAbilitySyncService
         await Parallel.ForEachAsync(allAbilitiesResponse.Results, parallelOptions, async (abilitySummary, ct) =>
         {
             try
+            {
+                Ability abilityFromResponse = await GetAbilityFromApi(abilitySummary, ct);
+
+                if (existingAbilitiesMap.TryGetValue(abilitySummary.Name, out Ability existingAbility))
                 {
-                    AbilityEffectPokeApiResponse abilityEffectEntries =
-                        await _httpClient.GetFromJsonAsync<AbilityEffectPokeApiResponse>(abilitySummary.Url, ct)
-                        ?? throw new PokeApiSyncException(MessagesHelper.GetApiCallFailMessage(abilitySummary.Url));
-
-                    Ability abilityFromResponse = abilityEffectEntries.ToAbility(abilitySummary.Name);
-
-                    if (existingAbilitiesMap.TryGetValue(abilitySummary.Name, out Ability existingAbility))
+                    if (existingAbility.Compare(abilityFromResponse))
                     {
-                        if (existingAbility.Compare(abilityFromResponse))
-                        {
-                            return;
-                        }
+                        return;
+                    }
 
-                        existingAbility.MapExisting(abilityFromResponse);
-                        updatedAbilities.Add(existingAbility);
-                    }
-                    else
-                    {
-                        newAbilities.Add(abilityFromResponse);
-                    }
+                    existingAbility.MapExisting(abilityFromResponse);
+                    updatedAbilities.Add(existingAbility);
                 }
-                catch (Exception ex)
+                else
                 {
-                    _logger.LogError(ex, "Error while trying to get new abilities or the ones to be updated.");
+                    newAbilities.Add(abilityFromResponse);
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while trying to get new abilities or the ones to be updated.");
+            }
         });
 
         await _unitOfWork.AbilityDao.CreateRangeAsync(newAbilities);
@@ -78,5 +71,20 @@ public class AbilitySyncService : IAbilitySyncService
         await _unitOfWork.CommitAsync();
 
         _logger.LogInformation("Creation/Update of abilities has been done!");
+    }
+
+    private async Task<AbilitySummaryListPokeApiResponse> GetAbilitiesSummaryListFromApi(CancellationToken cancellationToken)
+    {
+        return await _httpClient.GetFromJsonAsync<AbilitySummaryListPokeApiResponse>(ApiConstants.AllAbilitiesInfoUri, cancellationToken)
+            ?? throw new PokeApiSyncException(MessagesHelper.GetApiCallFailMessage(ApiConstants.AllAbilitiesInfoUri));
+    }
+
+    private async Task<Ability> GetAbilityFromApi(AbilitySummaryPokeApiResponse abilitySummary, CancellationToken ct)
+    {
+        AbilityEffectPokeApiResponse abilityEffectEntries =
+            await _httpClient.GetFromJsonAsync<AbilityEffectPokeApiResponse>(abilitySummary.Url, ct)
+            ?? throw new PokeApiSyncException(MessagesHelper.GetApiCallFailMessage(abilitySummary.Url));
+
+        return abilityEffectEntries.ToAbility(abilitySummary.Name);
     }
 }

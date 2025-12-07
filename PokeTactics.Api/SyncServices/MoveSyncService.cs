@@ -28,10 +28,7 @@ public class MoveSyncService : IMoveSyncService
     public async Task Sync(CancellationToken cancellationToken)
     {
         IDictionary<string, Move> existingMovesMap = await _unitOfWork.MoveDao.LoadMapByName();
-
-        MoveSummaryListPokeApiResponse allMovesResponse =
-            await _httpClient.GetFromJsonAsync<MoveSummaryListPokeApiResponse>(ApiConstants.AllMovesInfoUri, cancellationToken)
-            ?? throw new PokeApiSyncException(MessagesHelper.GetApiCallFailMessage(ApiConstants.AllMovesInfoUri));
+        MoveSummaryListPokeApiResponse allMovesResponse = await GetMovesSummaryFromApi(cancellationToken);
 
         ConcurrentBag<Move> newMoves = [];
         ConcurrentBag<Move> updatedMoves = [];
@@ -45,31 +42,28 @@ public class MoveSyncService : IMoveSyncService
         await Parallel.ForEachAsync(allMovesResponse.Results, parallelOptions, async (moveSummary, ct) =>
         {
             try
+            {
+                Move moveFromResponse = await GetMoveFromApi(moveSummary, ct);
+
+                if (existingMovesMap.TryGetValue(moveSummary.Name, out Move existingMove))
                 {
-                    MoveInfoPokeApiResponse moveInfoResponse = await _httpClient.GetFromJsonAsync<MoveInfoPokeApiResponse>(moveSummary.Url, ct)
-                        ?? throw new PokeApiSyncException(MessagesHelper.GetApiCallFailMessage(moveSummary.Url));
-
-                    Move moveFromResponse = moveInfoResponse.ToMove(moveSummary.Name);
-
-                    if (existingMovesMap.TryGetValue(moveSummary.Name, out Move existingMove))
+                    if (existingMove.Compare(moveFromResponse))
                     {
-                        if (existingMove.Compare(moveFromResponse))
-                        {
-                            return;
-                        }
+                        return;
+                    }
 
-                        existingMove.MapExisting(moveFromResponse);
-                        updatedMoves.Add(existingMove);
-                    }
-                    else
-                    {
-                        newMoves.Add(moveFromResponse);
-                    }
+                    existingMove.MapExisting(moveFromResponse);
+                    updatedMoves.Add(existingMove);
                 }
-                catch (Exception exception)
+                else
                 {
-                    _logger.LogError(exception, "Error while trying to get new moves or the ones to be updated.");
+                    newMoves.Add(moveFromResponse);
                 }
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception, "Error while trying to get new moves or the ones to be updated.");
+            }
         });
 
         await _unitOfWork.MoveDao.CreateRangeAsync(newMoves.ToList());
@@ -77,5 +71,19 @@ public class MoveSyncService : IMoveSyncService
         await _unitOfWork.CommitAsync();
 
         _logger.LogInformation("Creation/Update of moves has been done!");
+    }
+
+    private async Task<MoveSummaryListPokeApiResponse> GetMovesSummaryFromApi(CancellationToken cancellationToken)
+    {
+        return await _httpClient.GetFromJsonAsync<MoveSummaryListPokeApiResponse>(ApiConstants.AllMovesInfoUri, cancellationToken)
+            ?? throw new PokeApiSyncException(MessagesHelper.GetApiCallFailMessage(ApiConstants.AllMovesInfoUri));
+    }
+
+    private async Task<Move> GetMoveFromApi(MoveSummaryPokeApiResponse moveSummary, CancellationToken ct)
+    {
+        MoveInfoPokeApiResponse moveInfoResponse = await _httpClient.GetFromJsonAsync<MoveInfoPokeApiResponse>(moveSummary.Url, ct)
+            ?? throw new PokeApiSyncException(MessagesHelper.GetApiCallFailMessage(moveSummary.Url));
+
+        return moveInfoResponse.ToMove(moveSummary.Name);
     }
 }

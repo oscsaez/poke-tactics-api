@@ -30,30 +30,27 @@ public class PokemonSyncService : IPokemonSyncService
         IDictionary<string, Ability> existingAbilitiesMap = await _unitOfWork.AbilityDao.LoadMapByName();
         IDictionary<string, Move> existingMovesMap = await _unitOfWork.MoveDao.LoadMapByName();
 
-        PokemonSummaryListPokeApiResponse allPokemonResponse =
-            await _httpClient.GetFromJsonAsync<PokemonSummaryListPokeApiResponse>(ApiConstants.AllPokemonInfoUri, cancellationToken)
-            ?? throw new PokeApiSyncException(MessagesHelper.GetApiCallFailMessage(ApiConstants.AllPokemonInfoUri));
+        PokemonSummaryListPokeApiResponse allPokemonResponse = await GetPokemonSummaryListFromApi(cancellationToken);
 
         ConcurrentBag<Pokemon> newPokemonConcurrentList = [];
         ConcurrentBag<Pokemon> updatedPokemonConcurrentList = [];
         ConcurrentBag<PokemonPokeApiResponse> newPokemonConcurrentResponses = [];
 
-        ParallelOptions parallelOptions = new ParallelOptions 
-        { 
-            MaxDegreeOfParallelism = ApiConstants.NumberOfRequestsGrantedConcurrently, 
-            CancellationToken = cancellationToken 
+        ParallelOptions parallelOptions = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = ApiConstants.NumberOfRequestsGrantedConcurrently,
+            CancellationToken = cancellationToken
         };
 
         await Parallel.ForEachAsync(allPokemonResponse.Results, parallelOptions, async (pokemonSummary, ct) =>
         {
             try
             {
-                var pokemonInfoResponse = await _httpClient.GetFromJsonAsync<PokemonPokeApiResponse>(pokemonSummary.Url, ct)
-                    ?? throw new PokeApiSyncException(MessagesHelper.GetApiCallFailMessage(pokemonSummary.Url));
+                PokemonPokeApiResponse pokemonInfoResponse = await GetPokemonFromApi(pokemonSummary, ct);
 
                 if (existingPokemonMap.TryGetValue(pokemonSummary.Name, out Pokemon existingPokemon))
                 {
-                    var pokemonFromResponse = pokemonInfoResponse.ToPokemonWithAbilitiesAndMoves();
+                    Pokemon pokemonFromResponse = pokemonInfoResponse.ToPokemonWithAbilitiesAndMoves();
 
                     if (!existingPokemon.Compare(pokemonFromResponse))
                     {
@@ -76,9 +73,12 @@ public class PokemonSyncService : IPokemonSyncService
         await _unitOfWork.PokemonDao.CreateRangeAsync(newPokemonConcurrentList.ToList());
         await _unitOfWork.PokemonDao.UpdateRangeAsync(updatedPokemonConcurrentList.ToList());
 
-        if(!newPokemonConcurrentList.IsNullOrEmpty())
+        await _unitOfWork.CommitAsync();
+
+        if (!newPokemonConcurrentList.IsNullOrEmpty())
         {
             List<PokemonPokeApiResponse> newPokemonResponses = newPokemonConcurrentResponses.ToList();
+            existingPokemonMap = await _unitOfWork.PokemonDao.LoadMapByName();
 
             await CreateAbilitiesInPokemon(newPokemonResponses, existingPokemonMap, existingAbilitiesMap);
             await CreateMovesInPokemon(newPokemonResponses, existingPokemonMap, existingMovesMap);
@@ -87,6 +87,18 @@ public class PokemonSyncService : IPokemonSyncService
         await _unitOfWork.CommitAsync();
 
         _logger.LogInformation("Creation/Update of pokemon has been done!");
+    }
+
+    private async Task<PokemonSummaryListPokeApiResponse> GetPokemonSummaryListFromApi(CancellationToken cancellationToken)
+    {
+        return await _httpClient.GetFromJsonAsync<PokemonSummaryListPokeApiResponse>(ApiConstants.AllPokemonInfoUri, cancellationToken)
+            ?? throw new PokeApiSyncException(MessagesHelper.GetApiCallFailMessage(ApiConstants.AllPokemonInfoUri));
+    }
+
+    private async Task<PokemonPokeApiResponse> GetPokemonFromApi(PokemonSummaryPokeApiResponse pokemonSummary, CancellationToken ct)
+    {
+        return await _httpClient.GetFromJsonAsync<PokemonPokeApiResponse>(pokemonSummary.Url, ct)
+            ?? throw new PokeApiSyncException(MessagesHelper.GetApiCallFailMessage(pokemonSummary.Url));
     }
 
     private async Task CreateAbilitiesInPokemon(
