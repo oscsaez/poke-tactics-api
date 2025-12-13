@@ -8,6 +8,8 @@ namespace PokeTactics.Infrastructure.Data.EntityConfigurations
     {
         public void Configure(EntityTypeBuilder<Sprite> builder)
         {
+            builder.HasIndex(s => s.OfficialArtworkUri)
+                .IsUnique();
         }
     }
 }

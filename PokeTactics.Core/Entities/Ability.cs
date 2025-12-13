@@ -8,11 +8,8 @@ namespace PokeTactics.Core.Entities
         [MaxLength(CoreConstants.MaxAbilityNameLength)]
         public required string Name { get; set; }
 
-        [MaxLength(CoreConstants.MaxDescriptionLength)]
         public string? Description { get; set; }
 
-        public bool IsHidden { get; set; }
-
-        public required ICollection<AbilitiesInPokemon> AbilitiesInPokemon { get; set; }
+        public ICollection<AbilityInPokemon> AbilitiesInPokemon { get; set; } = [];
     }
 }

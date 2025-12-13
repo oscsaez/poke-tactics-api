@@ -9,8 +9,8 @@ namespace PokeTactics.Infrastructure.Daos
 {
     public abstract class BaseDao<TEntity> : IBaseDao<TEntity> where TEntity : Entity
     {
+        private readonly DbSet<TEntity> DbSet;
         protected readonly PokeTacticsContext DbContext;
-        protected readonly DbSet<TEntity> DbSet;
 
         protected BaseDao(PokeTacticsContext dbContext)
         {
@@ -30,14 +30,12 @@ namespace PokeTactics.Infrastructure.Daos
 
         public virtual async Task DeleteByIdAsync(int id)
         {
-            TEntity entity = await LoadByIdAsync(id) ?? throw new EntityDoesNotExistException($"Entity with Id [{id}] does not exist");
-            DbSet.Remove(entity);
+            await DbSet.Where(x => x.Id == id).ExecuteDeleteAsync();
         }
 
         public virtual async Task DeleteByIdsAsync(IEnumerable<int> ids)
         {
-            IEnumerable<TEntity> entities = await LoadAsync(x => ids.Contains(x.Id));
-            DbSet.RemoveRange(entities);
+            await DbSet.Where(x => ids.Contains(x.Id)).ExecuteDeleteAsync();
         }
 
         public virtual async Task<IEnumerable<TEntity>> LoadAllAsync()
@@ -78,18 +76,19 @@ namespace PokeTactics.Infrastructure.Daos
 
         public virtual Task UpdateAsync(TEntity entity)
         {
-            DbSet.Attach(entity);
-            DbContext.Entry(entity).State = EntityState.Modified;
-
+            DbSet.Update(entity);
             return Task.CompletedTask;
         }
 
         public virtual Task UpdateRangeAsync(IEnumerable<TEntity> entities)
         {
-            DbSet.AttachRange(entities);
-            DbContext.Entry(entities).State = EntityState.Modified;
-
+            DbSet.UpdateRange(entities);
             return Task.CompletedTask;
+        }
+
+        protected virtual IQueryable<TEntity> Query()
+        {
+            return DbSet;
         }
     }
 }

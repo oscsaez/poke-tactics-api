@@ -8,6 +8,8 @@ namespace PokeTactics.Infrastructure.Data.EntityConfigurations
     {
         public void Configure(EntityTypeBuilder<Move> builder)
         {
+            builder.HasIndex(m => m.Name)
+                .IsUnique();
         }
     }
 }

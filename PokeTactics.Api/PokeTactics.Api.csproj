@@ -17,6 +17,8 @@
   <ItemGroup>
     <ProjectReference Include="..\PokeTactics.Core\PokeTactics.Core.csproj" />
     <ProjectReference Include="..\PokeTactics.Infrastructure\PokeTactics.Infrastructure.csproj" />
+    <ProjectReference Include="..\PokeTactics.Contracts\PokeTactics.Contracts.csproj" />
+    <ProjectReference Include="..\PokeTactics.Services\PokeTactics.Services.csproj" />
   </ItemGroup>
 
 </Project>

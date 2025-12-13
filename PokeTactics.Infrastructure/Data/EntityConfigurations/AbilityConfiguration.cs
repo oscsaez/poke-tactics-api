@@ -9,6 +9,8 @@ namespace PokeTactics.Infrastructure.Data.EntityConfigurations
     {
         public void Configure(EntityTypeBuilder<Ability> builder)
         {
+            builder.HasIndex(a => a.Name)
+                .IsUnique();
         }
     }
 }

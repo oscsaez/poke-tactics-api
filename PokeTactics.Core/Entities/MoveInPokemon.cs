@@ -1,13 +1,13 @@
 namespace PokeTactics.Core.Entities
 {
-    public class AbilitiesInPokemon
+    public class MoveInPokemon : Entity
     {
         public int PokemonId { get; set; }
 
         public Pokemon Pokemon { get; set; } = default!;
 
-        public int AbilityId { get; set; }
+        public int MoveId { get; set; }
 
-        public Ability Ability { get; set; } = default!;
+        public Move Move { get; set; } = default!;
     }
 }

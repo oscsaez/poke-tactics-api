@@ -22,21 +22,6 @@ namespace PokeTactics.Infrastructure.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
-            modelBuilder.Entity("PokeTactics.Core.Entities.AbilitiesInPokemon", b =>
-                {
-                    b.Property<int>("PokemonId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("AbilityId")
-                        .HasColumnType("int");
-
-                    b.HasKey("PokemonId", "AbilityId");
-
-                    b.HasIndex("AbilityId");
-
-                    b.ToTable("AbilitiesInPokemon");
-                });
-
             modelBuilder.Entity("PokeTactics.Core.Entities.Ability", b =>
                 {
                     b.Property<int>("Id")
@@ -46,11 +31,7 @@ namespace PokeTactics.Infrastructure.Migrations
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Description")
-                        .HasMaxLength(150)
-                        .HasColumnType("varchar(150)");
-
-                    b.Property<bool>("IsHidden")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -59,7 +40,31 @@ namespace PokeTactics.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Name")
+                        .IsUnique();
+
                     b.ToTable("Ability");
+                });
+
+            modelBuilder.Entity("PokeTactics.Core.Entities.AbilityInPokemon", b =>
+                {
+                    b.Property<int>("PokemonId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AbilityId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("tinyint(1)");
+
+                    b.HasKey("PokemonId", "AbilityId");
+
+                    b.HasIndex("AbilityId");
+
+                    b.ToTable("AbilityInPokemon");
                 });
 
             modelBuilder.Entity("PokeTactics.Core.Entities.Move", b =>
@@ -74,18 +79,17 @@ namespace PokeTactics.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(150)
-                        .HasColumnType("varchar(150)");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("varchar(20)");
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<int?>("Power")
                         .HasColumnType("int");
 
-                    b.Property<int>("PowerPoints")
+                    b.Property<int?>("PowerPoints")
                         .HasColumnType("int");
 
                     b.Property<string>("Type")
@@ -95,10 +99,13 @@ namespace PokeTactics.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Name")
+                        .IsUnique();
+
                     b.ToTable("Move");
                 });
 
-            modelBuilder.Entity("PokeTactics.Core.Entities.MovesInPokemon", b =>
+            modelBuilder.Entity("PokeTactics.Core.Entities.MoveInPokemon", b =>
                 {
                     b.Property<int>("PokemonId")
                         .HasColumnType("int");
@@ -106,11 +113,14 @@ namespace PokeTactics.Infrastructure.Migrations
                     b.Property<int>("MoveId")
                         .HasColumnType("int");
 
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
                     b.HasKey("PokemonId", "MoveId");
 
                     b.HasIndex("MoveId");
 
-                    b.ToTable("MovesInPokemon");
+                    b.ToTable("MoveInPokemon");
                 });
 
             modelBuilder.Entity("PokeTactics.Core.Entities.Pokemon", b =>
@@ -143,6 +153,9 @@ namespace PokeTactics.Infrastructure.Migrations
                         .HasColumnType("double");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.HasIndex("SpriteId");
 
@@ -190,11 +203,13 @@ namespace PokeTactics.Infrastructure.Migrations
                         .HasColumnType("varchar(150)");
 
                     b.Property<string>("OfficialArtworkUri")
-                        .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("varchar(150)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OfficialArtworkUri")
+                        .IsUnique();
 
                     b.ToTable("Sprite");
                 });
@@ -225,12 +240,12 @@ namespace PokeTactics.Infrastructure.Migrations
                     b.ToTable("Stat");
                 });
 
-            modelBuilder.Entity("PokeTactics.Core.Entities.AbilitiesInPokemon", b =>
+            modelBuilder.Entity("PokeTactics.Core.Entities.AbilityInPokemon", b =>
                 {
                     b.HasOne("PokeTactics.Core.Entities.Ability", "Ability")
                         .WithMany("AbilitiesInPokemon")
                         .HasForeignKey("AbilityId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("PokeTactics.Core.Entities.Pokemon", "Pokemon")
@@ -244,12 +259,12 @@ namespace PokeTactics.Infrastructure.Migrations
                     b.Navigation("Pokemon");
                 });
 
-            modelBuilder.Entity("PokeTactics.Core.Entities.MovesInPokemon", b =>
+            modelBuilder.Entity("PokeTactics.Core.Entities.MoveInPokemon", b =>
                 {
                     b.HasOne("PokeTactics.Core.Entities.Move", "Move")
                         .WithMany("MovesInPokemon")
                         .HasForeignKey("MoveId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("PokeTactics.Core.Entities.Pokemon", "Pokemon")

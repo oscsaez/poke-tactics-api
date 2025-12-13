@@ -15,17 +15,20 @@ namespace PokeTactics.Core.Entities
 
         public double Weight { get; set; }
 
+        // It is an IList because as it is a list of strings in the database, it is saved as a json
+        // and when retrieving the list from the database the PopulateList method will fail if it
+        // it is not an IList
         [MaxListCount(CoreConstants.MaxTypesListCount)]
-        public required ICollection<string> Types { get; set; }
+        public IList<string> Types { get; set; } = [];
 
         // TODO Is this necessary? Spike different stats as properties
         [MaxListCount(CoreConstants.MaxStatsListCount)]
-        public required ICollection<Stat> Stats { get; set; }
+        public ICollection<Stat> Stats { get; set; } = [];
 
         [MaxListCount(CoreConstants.MaxAbilitiesListCount)]
-        public required ICollection<AbilitiesInPokemon> AbilitiesInPokemon { get; set; }
+        public ICollection<AbilityInPokemon> AbilitiesInPokemon { get; set; } = [];
 
-        public required ICollection<MovesInPokemon> MovesInPokemon { get; set; }
+        public ICollection<MoveInPokemon> MovesInPokemon { get; set; } = [];
 
         public required Sprite Sprite { get; set; }
     }

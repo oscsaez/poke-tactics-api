@@ -4,19 +4,21 @@ using PokeTactics.Core.Entities;
 
 namespace PokeTactics.Infrastructure.Data.EntityConfigurations
 {
-    public class AbilitiesInPokemonConfiguration : IEntityTypeConfiguration<AbilitiesInPokemon>
+    public class AbilityInPokemonConfiguration : IEntityTypeConfiguration<AbilityInPokemon>
     {
-        public void Configure(EntityTypeBuilder<AbilitiesInPokemon> builder)
+        public void Configure(EntityTypeBuilder<AbilityInPokemon> builder)
         {
             builder.HasKey(x => new { x.PokemonId, x.AbilityId });
 
             builder.HasOne(x => x.Pokemon)
                 .WithMany(p => p.AbilitiesInPokemon)
-                .HasForeignKey(x => x.PokemonId);
+                .HasForeignKey(x => x.PokemonId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasOne(x => x.Ability)
                 .WithMany(a => a.AbilitiesInPokemon)
-                .HasForeignKey(x => x.AbilityId);
+                .HasForeignKey(x => x.AbilityId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

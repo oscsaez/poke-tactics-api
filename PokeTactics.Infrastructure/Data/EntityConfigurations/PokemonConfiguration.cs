@@ -7,7 +7,9 @@ namespace PokeTactics.Infrastructure.Data.EntityConfigurations
     public class PokemonConfiguration : IEntityTypeConfiguration<Pokemon>
     {
         public void Configure(EntityTypeBuilder<Pokemon> builder)
-        {       
+        {
+            builder.HasIndex(p => p.Name)
+                .IsUnique();
         }
     }
 }
