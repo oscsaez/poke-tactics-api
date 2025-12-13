@@ -12,11 +12,13 @@ namespace PokeTactics.Infrastructure.Data.EntityConfigurations
 
             builder.HasOne(x => x.Pokemon)
                 .WithMany(p => p.AbilitiesInPokemon)
-                .HasForeignKey(x => x.PokemonId);
+                .HasForeignKey(x => x.PokemonId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasOne(x => x.Ability)
                 .WithMany(a => a.AbilitiesInPokemon)
-                .HasForeignKey(x => x.AbilityId);
+                .HasForeignKey(x => x.AbilityId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
