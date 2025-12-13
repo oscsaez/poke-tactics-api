@@ -39,6 +39,11 @@ public class MoveSyncService : IMoveSyncService
             CancellationToken = cancellationToken
         };
 
+        IEnumerable<string> allMoveNames = allMovesResponse.Results.Select(x => x.Name);
+        IEnumerable<string> moveNamesToDelete = existingMovesMap.Select(x => x.Key).Except(allMoveNames);
+
+        await _unitOfWork.AbilityDao.DeleteByNames(moveNamesToDelete);
+
         await Parallel.ForEachAsync(allMovesResponse.Results, parallelOptions, async (moveSummary, ct) =>
         {
             try

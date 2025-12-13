@@ -11,6 +11,13 @@ namespace PokeTactics.Infrastructure.Daos
         {
         }
 
+        public async Task DeleteByNames(IEnumerable<string> names)
+        {
+            await Query()
+                .Where(x => names.Contains(x.Name))
+                .ExecuteDeleteAsync();
+        }
+
         public async Task<Pokemon?> LoadByName(string name)
         {
             return await Query()

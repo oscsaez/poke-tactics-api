@@ -39,6 +39,11 @@ public class AbilitySyncService : IAbilitySyncService
             CancellationToken = cancellationToken
         };
 
+        IEnumerable<string> allAbilityNames = allAbilitiesResponse.Results.Select(x => x.Name);
+        IEnumerable<string> abilityNamesToDelete = existingAbilitiesMap.Select(x => x.Key).Except(allAbilityNames);
+
+        await _unitOfWork.AbilityDao.DeleteByNames(abilityNamesToDelete);
+
         await Parallel.ForEachAsync(allAbilitiesResponse.Results, parallelOptions, async (abilitySummary, ct) =>
         {
             try

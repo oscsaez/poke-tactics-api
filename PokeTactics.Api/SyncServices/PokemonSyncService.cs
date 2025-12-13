@@ -42,6 +42,11 @@ public class PokemonSyncService : IPokemonSyncService
             CancellationToken = cancellationToken
         };
 
+        var allPokemonNames = allPokemonResponse.Results.Select(x => x.Name);
+        var pokemonNamesToDelete = existingAbilitiesMap.Select(x => x.Key).Except(allPokemonNames);
+
+        await _unitOfWork.PokemonDao.DeleteByNames(pokemonNamesToDelete);
+
         await Parallel.ForEachAsync(allPokemonResponse.Results, parallelOptions, async (pokemonSummary, ct) =>
         {
             try

@@ -11,6 +11,13 @@ public class AbilityDao : BaseDao<Ability>, IAbilityDao
     {
     }
 
+    public async Task DeleteByNames(IEnumerable<string> names)
+    {
+        await Query()
+            .Where(x => names.Contains(x.Name))
+            .ExecuteDeleteAsync();
+    }
+
     public async Task<ICollection<Ability>> LoadByNames(IEnumerable<string> names)
     {
         return await Query()
