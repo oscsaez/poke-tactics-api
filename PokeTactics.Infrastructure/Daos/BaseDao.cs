@@ -30,14 +30,12 @@ namespace PokeTactics.Infrastructure.Daos
 
         public virtual async Task DeleteByIdAsync(int id)
         {
-            TEntity entity = await LoadByIdAsync(id) ?? throw new EntityDoesNotExistException($"Entity with Id [{id}] does not exist");
-            DbSet.Remove(entity);
+            await DbSet.Where(x => x.Id == id).ExecuteDeleteAsync();
         }
 
         public virtual async Task DeleteByIdsAsync(IEnumerable<int> ids)
         {
-            IEnumerable<TEntity> entities = await LoadAsync(x => ids.Contains(x.Id));
-            DbSet.RemoveRange(entities);
+            await DbSet.Where(x => ids.Contains(x.Id)).ExecuteDeleteAsync();
         }
 
         public virtual async Task<IEnumerable<TEntity>> LoadAllAsync()
