@@ -33,6 +33,11 @@ builder.Services.AddOpenApi();
 builder.Services.AddApiServices();
 builder.Services.AddInfrastructureServices();
 
+if (!builder.Environment.IsEnvironment(EnvironmentConstants.TestingEnvironmentName))
+{
+    builder.Services.AddHostedServices();
+}
+
 WebApplication app = builder.Build();
 
 // Apply migrations when starting service
@@ -72,6 +77,8 @@ app.MapGet("/weatherforecast", () =>
 app.UseMiddleware<ExceptionHandler>();
 
 app.Run();
+
+public partial class Program {}
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {

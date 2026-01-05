@@ -11,6 +11,7 @@ namespace PokeTactics.Infrastructure
         public static void AddInfrastructureServices(this IServiceCollection services)
         {
             services.AddDataServices();
+            services.AddDaos();
         }
 
         public static void AddDataServices(this IServiceCollection services)

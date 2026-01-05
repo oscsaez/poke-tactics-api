@@ -11,7 +11,6 @@ public static class ServiceCollectionExtensions
     public static void AddApiServices(this IServiceCollection services)
     {
         services.AddExternalApiHttpClient();
-        services.AddHostedServices();
         services.AddSyncServices();
     }
 
@@ -23,7 +22,7 @@ public static class ServiceCollectionExtensions
         });
     }
 
-    private static void AddHostedServices(this IServiceCollection services)
+    public static void AddHostedServices(this IServiceCollection services)
     {
         services.AddHostedService<PokemonSyncHostedService>();
     }
@@ -33,5 +32,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAbilitySyncService, AbilitySyncService>();
         services.AddScoped<IMoveSyncService, MoveSyncService>();
         services.AddScoped<IPokemonSyncService, PokemonSyncService>();
+        services.AddScoped<ISyncService, SyncService>();
     }
 }
