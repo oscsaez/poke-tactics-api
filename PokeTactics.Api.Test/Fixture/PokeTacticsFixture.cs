@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc.Testing;
-using Testcontainers.MySql;
 using WireMock.Server;
 using Microsoft.Extensions.Configuration;
 using PokeTactics.Contracts.Ability.PokeApi;
@@ -7,54 +6,86 @@ using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using PokeTactics.Contracts.Move.PokeApi;
 using PokeTactics.Contracts.Pokemon.PokeApi;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Hosting;
+using PokeTactics.Api.Test.Utils;
+using MySqlConnector;
+using System.Text.Json;
+using PokeTactics.Api.HostedServices;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using PokeTactics.Api.Utils;
+using Microsoft.EntityFrameworkCore;
+using PokeTactics.Infrastructure.Data;
+
 
 namespace PokeTactics.Api.Test.Fixture;
 
 public class PokeTacticsFixture : IAsyncLifetime
 {
-    private readonly string pokeApiAbilityPath = $"/api/v2/ability?={int.MaxValue}";
+    private const string RootConnectionString = "server=localhost;user=root;password=password;port=3333;";
+    private const string ExternalApiName = "PokeApi";
+    private const string PokeApiAbilityPath = "/ability";
+    private const string PokeApiMovePath = "/move";
+    private const string PokeApiPokemonPath = "/pokemon";
+    private const string LimitParam = "limit";
+
+    private readonly string _databaseName = $"poketactics_test_{TestGenerator.RandomGuidAsString()}";
 
     public HttpClient ApiClient { get; private set; } = null!;
 
     public WireMockServer PokeApiMockServer { get; private set; } = null!;
 
-    public MySqlContainer MySqlContainer { get; private set; } = null!;
-
-    public WebApplicationFactory<IApiMarker> Factory { get; private set; } = null!;
+    public WebApplicationFactory<Program> Factory { get; private set; } = null!;
 
     public async Task InitializeAsync()
     {
-        // Database configuration        
-        MySqlContainer = new MySqlBuilder()
-            .WithDatabase("poketactics")
-            .WithUsername("test")
-            .WithPassword("test")
-            .WithImage("mysql:8.0")
-            .Build();
+        // Database configuration
+        await using (var connection = new MySqlConnection(RootConnectionString))
+        {
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = $"CREATE DATABASE `{_databaseName}`;";
+            await command.ExecuteNonQueryAsync();
+        }
 
-        await MySqlContainer.StartAsync();
+        string connectionString = $"{RootConnectionString}database={_databaseName};";
 
         // External API mocks
         PokeApiMockServer = WireMockServer.Start();
 
-        ConfigurePokeApiMockServerToGetEmptyAbilitiesSummary();
-        // TODO: add empty calls for moves and pokemon
-
         // Real API configuration
-        Factory = new WebApplicationFactory<IApiMarker>()
+        Factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
+                builder.UseEnvironment(EnvironmentConstants.TestingEnvironmentName);
+
                 builder.ConfigureAppConfiguration((_, config) =>
                 {
                     config.AddInMemoryCollection(new Dictionary<string, string?>
                     {
-                        ["ConnectionStrings:Default"] = MySqlContainer.GetConnectionString(),
-                        ["PokeApi:BaseUrl"] = PokeApiMockServer.Url
+                        ["ConnectionStrings:DefaultConnection"] = connectionString
+                    });
+                });
+
+                builder.ConfigureServices(services =>
+                {
+                    services.RemoveAll<DbContextOptions<PokeTacticsContext>>();
+                    services.RemoveAll<PokeTacticsContext>();
+
+                    services.AddDbContext<PokeTacticsContext>(options =>
+                    {
+                        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+                    });
+
+                    services.AddHttpClient(ExternalApiName, client =>
+                    {
+                        client.BaseAddress = new Uri(PokeApiMockServer.Url);
                     });
                 });
             });
 
         ApiClient = Factory.CreateClient();
+        await CreateDatabase();
     }
 
     public async Task DisposeAsync()
@@ -63,7 +94,27 @@ public class PokeTacticsFixture : IAsyncLifetime
         Factory.Dispose();
         PokeApiMockServer.Stop();
         PokeApiMockServer.Dispose();
-        await MySqlContainer.DisposeAsync();
+        
+        await using var connection = new MySqlConnection(RootConnectionString);
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = $"DROP DATABASE IF EXISTS `{_databaseName}`;";
+        await command.ExecuteNonQueryAsync();
+    }
+
+    #region Mock external services
+
+    public void ConfigurePokeApiMockServerForGet<TResponse>(string path, TResponse response) where TResponse : class
+    {
+        JsonSerializerOptions jsonOptions = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+        };
+
+        PokeApiMockServer
+            .Given(Request.Create().WithPath(path).UsingGet())
+            .RespondWith(Response.Create().WithSuccess().WithBody(JsonSerializer.Serialize(response, jsonOptions)));
     }
 
     public void ConfigurePokeApiMockServerToGetEmptyAbilitiesSummary()
@@ -74,36 +125,69 @@ public class PokeTacticsFixture : IAsyncLifetime
             Results = []
         };
 
-        PokeApiMockServer
-            .Given(Request.Create().WithPath(pokeApiAbilityPath).UsingGet())
-            .RespondWith(Response.Create().WithSuccess().WithBodyAsJson(emptyResponse));
-    }
-
-    public void ConfigurePokeApiMockServerForGet<TResponse>(string path, TResponse response) where TResponse : class
-    {
-        PokeApiMockServer
-            .Given(Request.Create().WithPath(path).UsingGet())
-            .RespondWith(Response.Create().WithSuccess().WithBodyAsJson(response));
+        ConfigurePokeApiMockServerToGetAbilitiesSummary(emptyResponse);
     }
 
     public void ConfigurePokeApiMockServerToGetAbilitiesSummary(AbilitySummaryListPokeApiResponse response)
     {
         PokeApiMockServer
-            .Given(Request.Create().WithPath(pokeApiAbilityPath).UsingGet())
+            .Given(Request.Create().WithPath(PokeApiAbilityPath).WithParam(LimitParam, int.MaxValue.ToString()).UsingGet())
             .RespondWith(Response.Create().WithSuccess().WithBodyAsJson(response));
+    }
+
+    public void ConfigurePokeApiMockServerToGetEmptyMovesSummary()
+    {
+        MoveSummaryListPokeApiResponse emptyResponse = new()
+        {
+            Count = 0,
+            Results = []
+        };
+
+        ConfigurePokeApiMockServerToGetMovesSummary(emptyResponse);
     }
 
     public void ConfigurePokeApiMockServerToGetMovesSummary(MoveSummaryListPokeApiResponse response)
     {
         PokeApiMockServer
-            .Given(Request.Create().WithPath($"/api/v2/move?={int.MaxValue}").UsingGet())
+            .Given(Request.Create().WithPath(PokeApiMovePath).WithParam(LimitParam, int.MaxValue.ToString()).UsingGet())
             .RespondWith(Response.Create().WithSuccess().WithBodyAsJson(response));
+    }
+
+    public void ConfigurePokeApiMockServerToGetEmptyPokemonSummaryList()
+    {
+        PokemonSummaryListPokeApiResponse emptyResponse = new()
+        {
+            Count = 0,
+            Results = []
+        };
+
+        ConfigurePokeApiMockServerToGetPokemonSummaryList(emptyResponse);
     }
 
     public void ConfigurePokeApiMockServerToGetPokemonSummaryList(PokemonSummaryListPokeApiResponse response)
     {
         PokeApiMockServer
-            .Given(Request.Create().WithPath($"/api/v2/pokemon?={int.MaxValue}").UsingGet())
+            .Given(Request.Create().WithPath(PokeApiPokemonPath).WithParam(LimitParam, int.MaxValue.ToString()).UsingGet())
             .RespondWith(Response.Create().WithSuccess().WithBodyAsJson(response));
+    }
+
+    #endregion
+
+    public IServiceScope CreateScope()
+    {
+        return Factory.Services.CreateScope();
+    }
+
+    public TService GetService<TService>()
+    {
+        return Factory.Services.GetService<TService>()
+            ?? throw new ArgumentNullException($"Invalid service {typeof(TService)}, it is not registered");
+    }
+
+    private async Task CreateDatabase()
+    {
+        using IServiceScope scope = CreateScope();
+        PokeTacticsContext db = scope.ServiceProvider.GetRequiredService<PokeTacticsContext>();
+        await db.Database.MigrateAsync();
     }
 }
