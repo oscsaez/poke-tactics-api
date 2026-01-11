@@ -10,6 +10,10 @@ namespace PokeTactics.Infrastructure.Data.EntityConfigurations
         {
             builder.HasIndex(s => s.OfficialArtworkUri)
                 .IsUnique();
+
+            builder.HasOne(s => s.Pokemon)
+                .WithOne(p => p.Sprite)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

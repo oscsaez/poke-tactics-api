@@ -8,6 +8,10 @@ namespace PokeTactics.Infrastructure.Data.EntityConfigurations
     {
         public void Configure(EntityTypeBuilder<Stat> builder)
         {
+            builder.HasOne(s => s.Pokemon)
+                .WithMany(p => p.Stats)
+                .HasForeignKey(s => s.PokemonId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

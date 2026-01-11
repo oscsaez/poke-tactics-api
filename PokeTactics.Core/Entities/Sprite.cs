@@ -31,5 +31,9 @@ namespace PokeTactics.Core.Entities
 
         [MaxLength(CoreConstants.MaxSpriteUriLength)]
         public string? FrontShinyFemaleUri { get; set; }
+
+        public int PokemonId { get; set; }
+
+        public Pokemon Pokemon { get; set; } = default!;
     }
 }
