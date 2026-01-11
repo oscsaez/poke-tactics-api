@@ -11,11 +11,11 @@ using Microsoft.AspNetCore.Hosting;
 using PokeTactics.Api.Test.Utils;
 using MySqlConnector;
 using System.Text.Json;
-using PokeTactics.Api.HostedServices;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using PokeTactics.Api.Utils;
 using Microsoft.EntityFrameworkCore;
 using PokeTactics.Infrastructure.Data;
+using PokeTactics.Core.Interfaces;
 
 
 namespace PokeTactics.Api.Test.Fixture;
@@ -182,6 +182,16 @@ public class PokeTacticsFixture : IAsyncLifetime
     {
         return Factory.Services.GetService<TService>()
             ?? throw new ArgumentNullException($"Invalid service {typeof(TService)}, it is not registered");
+    }
+
+    public async Task DeleteAll()
+    {
+        using IServiceScope scope = CreateScope();
+        IUnitOfWork unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+
+        await unitOfWork.AbilityDao.DeleteAllAsync();
+        await unitOfWork.MoveDao.DeleteAllAsync();
+        await unitOfWork.PokemonDao.DeleteAllAsync();
     }
 
     private async Task CreateDatabase()

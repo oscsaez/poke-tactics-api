@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using PokeTactics.Api.Test.Contexts;
 using PokeTactics.Api.Test.Fixture;
 using PokeTactics.Api.Test.Utils;
 using PokeTactics.Contracts.Ability.PokeApi;
@@ -16,28 +17,93 @@ using PokeTactics.Core.Interfaces.SyncServices;
 namespace PokeTactics.Api.Test.SyncServices;
 
 [Collection(PokeTacticsCollection.Name)]
-public class SyncServiceTest
+public class SyncServiceTest : IAsyncLifetime
 {
     private const string EnglishLanguage = "en";
 
     private readonly PokeTacticsFixture _fixture;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ISyncService _syncService;
 
     public SyncServiceTest(PokeTacticsFixture fixture)
     {
         _fixture = fixture;
         _unitOfWork = _fixture.GetService<IUnitOfWork>();
+        _syncService = _fixture.GetService<ISyncService>();
+    }
+
+    public Task InitializeAsync()
+    {
+        return Task.CompletedTask;
+    }
+
+    public async Task DisposeAsync()
+    {
+        await _fixture.DeleteAll();
     }
 
     [Fact]
     public async Task Sync_NewAbilitiesMovesAndPokemon_CreateThem()
     {
         // Arrange
-        using IServiceScope scope = _fixture.CreateScope();
-        ISyncService syncService = scope.ServiceProvider.GetRequiredService<ISyncService>();
-
         CancellationToken cancellationToken = new();
+        SyncTestContext context = SetupNewPokemon();
 
+        // Act
+        await _syncService.Sync(cancellationToken);
+
+        // Assert
+        await VerifyAbilitiesMovesAndPokemon(context);
+    }
+
+    [Fact]
+    public async Task Sync_UpdateAbilitiesMovesAndPokemon_UpdateThem()
+    {
+        // Arrange
+        CancellationToken cancellationToken = new();
+        SyncTestContext context = SetupNewPokemon();
+
+        await _syncService.Sync(cancellationToken);
+
+        context.AbilityEffectResponse!.EffectEntries.Single().Effect = TestGenerator.RandomGuidAsString();
+        _fixture.ConfigurePokeApiMockServerForGet(context.AbilitySummaryResponse!.Url, context.AbilityEffectResponse!);
+
+        context.MoveInfoResponse!.EffectEntries.Single().Effect = TestGenerator.RandomGuidAsString();
+        _fixture.ConfigurePokeApiMockServerForGet(context.MoveSummaryResponse!.Url, context.MoveInfoResponse!);
+
+        context.PokemonResponse!.Order = TestGenerator.RandomInt();
+        _fixture.ConfigurePokeApiMockServerForGet(context.PokemonSummaryResponse!.Url, context.PokemonResponse!);
+
+        // Act
+        await _syncService.Sync(cancellationToken);
+
+        // Assert
+        await VerifyAbilitiesMovesAndPokemon(context);
+    }
+
+    [Fact]
+    public async Task Sync_RemoveAbilitiesMovesAndPokemonAndAddNewOnes_RemoveExistingOnesAndAddNewOnes()
+    {
+        // Arrange
+        CancellationToken cancellationToken = new();
+        SyncTestContext context1 = SetupNewPokemon();
+
+        await _syncService.Sync(cancellationToken);
+        await VerifyAbilitiesMovesAndPokemon(context1);
+
+        SyncTestContext context2 = SetupNewPokemon();
+
+        // Act
+        await _syncService.Sync(cancellationToken);
+
+        // Arrange
+        await VerifyAbilitiesMovesAndPokemon(context2);
+    }
+
+#region Setup
+
+    private SyncTestContext SetupNewPokemon()
+    {
         string pokemonName = TestGenerator.RandomName();
         AbilitySummaryListPokeApiResponse abilitiesSummary = BuildAbilitySummaryListPokeApiResponse();
         AbilitySummaryPokeApiResponse abilitySummary = abilitiesSummary.Results.Single();
@@ -46,6 +112,7 @@ public class SyncServiceTest
         MoveSummaryPokeApiResponse moveSummary = movesSummary.Results.Single();
         MoveInfoPokeApiResponse moveInfo = BuildMoveInfoPokeApiResponse();
         PokemonSummaryListPokeApiResponse pokemonSummaryList = BuildPokemonSummaryListPokeApiResponse(pokemonName);
+        PokemonSummaryPokeApiResponse pokemonSummary = pokemonSummaryList.Results.Single();
         PokemonPokeApiResponse pokemonResponse = BuildPokemonPokeApiResponse(pokemonName, [abilitySummary], [moveSummary]);
 
         _fixture.ConfigurePokeApiMockServerToGetAbilitiesSummary(abilitiesSummary);
@@ -53,26 +120,20 @@ public class SyncServiceTest
         _fixture.ConfigurePokeApiMockServerToGetMovesSummary(movesSummary);
         _fixture.ConfigurePokeApiMockServerForGet(moveSummary.Url, moveInfo);
         _fixture.ConfigurePokeApiMockServerToGetPokemonSummaryList(pokemonSummaryList);
-        _fixture.ConfigurePokeApiMockServerForGet(pokemonSummaryList.Results.First().Url, pokemonResponse);
+        _fixture.ConfigurePokeApiMockServerForGet(pokemonSummary.Url, pokemonResponse);
 
-        // Act
-        await syncService.Sync(cancellationToken);
-
-        // Assert
-        Dictionary<string, AbilityEffectPokeApiResponse> abilityEffectByNameMap = new()
+        return new SyncTestContext
         {
-            { abilitySummary.Name, abilityEffect }
+            AbilitySummaryResponse = abilitySummary,
+            AbilityEffectResponse = abilityEffect,
+            MoveSummaryResponse = moveSummary,
+            MoveInfoResponse = moveInfo,
+            PokemonSummaryResponse = pokemonSummary,
+            PokemonResponse = pokemonResponse
         };
-
-        Dictionary<string, MoveInfoPokeApiResponse> movesInfoByNameMap = new()
-        {
-            { moveSummary.Name, moveInfo }
-        };
-
-        await VerifyAbilities(abilityEffectByNameMap);
-        await VerifyMoves(movesInfoByNameMap);
-        await VerifyPokemon([pokemonResponse]);
     }
+
+#endregion
 
 #region Builders
 
@@ -231,6 +292,23 @@ public class SyncServiceTest
 
 #region Verifiers
 
+    private async Task VerifyAbilitiesMovesAndPokemon(SyncTestContext context)
+    {
+        Dictionary<string, AbilityEffectPokeApiResponse> abilityEffectByNameMap = new()
+        {
+            { context.AbilitySummaryResponse!.Name, context.AbilityEffectResponse! }
+        };
+
+        Dictionary<string, MoveInfoPokeApiResponse> movesInfoByNameMap = new()
+        {
+            { context.MoveSummaryResponse!.Name, context.MoveInfoResponse! }
+        };
+
+        await VerifyAbilities(abilityEffectByNameMap);
+        await VerifyMoves(movesInfoByNameMap);
+        await VerifyPokemon([context.PokemonResponse!]);
+    }
+
     private async Task VerifyAbilities(IDictionary<string, AbilityEffectPokeApiResponse> abilityEffectsByNameMap)
     {
         IEnumerable<Ability> allAbilities = await _unitOfWork.AbilityDao.LoadAllAsync();
@@ -307,6 +385,6 @@ public class SyncServiceTest
         }
     }
 
-#endregion
+    #endregion
 
 }

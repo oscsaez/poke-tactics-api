@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Contexts\" />
     <Folder Include="Utils\" />
   </ItemGroup>
 
