@@ -38,6 +38,12 @@ namespace PokeTactics.Infrastructure.Daos
             await DbSet.Where(x => ids.Contains(x.Id)).ExecuteDeleteAsync();
         }
 
+        // Should be used only for testing
+        public virtual async Task DeleteAllAsync()
+        {
+            await DbSet.ExecuteDeleteAsync();
+        }
+
         public virtual async Task<IEnumerable<TEntity>> LoadAllAsync()
         {
             return await Query().ToListAsync();

@@ -23,6 +23,8 @@ namespace PokeTactics.Core.Interfaces.Daos
 
         Task DeleteByIdsAsync(IEnumerable<int> ids);
 
+        Task DeleteAllAsync();
+
         Task UpdateAsync(TEntity entity);
 
         Task UpdateRangeAsync(IEnumerable<TEntity> entities);
