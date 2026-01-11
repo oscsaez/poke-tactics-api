@@ -43,13 +43,9 @@ namespace PokeTactics.Api.HostedServices
         private async Task SyncIfNeeded(CancellationToken cancellationToken)
         {
             using IServiceScope scope = _serviceProvider.CreateScope();
-            IAbilitySyncService abilitySyncService = scope.ServiceProvider.GetRequiredService<IAbilitySyncService>();
-            IMoveSyncService moveSyncService = scope.ServiceProvider.GetRequiredService<IMoveSyncService>();
-            IPokemonSyncService pokemonSyncService = scope.ServiceProvider.GetRequiredService<IPokemonSyncService>();
+            ISyncService syncService = scope.ServiceProvider.GetRequiredService<ISyncService>();
 
-            await abilitySyncService.Sync(cancellationToken);
-            await moveSyncService.Sync(cancellationToken);
-            await pokemonSyncService.Sync(cancellationToken);
+            await syncService.Sync(cancellationToken);
         }
     }
 }

@@ -11,7 +11,7 @@ public class SpritePokeApiResponse
     public string? BackMaleUri { get; set; }
 
     [JsonPropertyName("back_female")]
-    public string? BackFeMaleUri { get; set; }
+    public string? BackFemaleUri { get; set; }
 
     [JsonPropertyName("back_shiny")]
     public string? BackShinyMaleUri { get; set; }
@@ -23,7 +23,7 @@ public class SpritePokeApiResponse
     public required string FrontMaleUri { get; set; }
 
     [JsonPropertyName("front_female")]
-    public string? FrontFeMaleUri { get; set; }
+    public string? FrontFemaleUri { get; set; }
 
     [JsonPropertyName("front_shiny")]
     public string? FrontShinyMaleUri { get; set; }

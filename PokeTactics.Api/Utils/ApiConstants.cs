@@ -11,9 +11,9 @@ namespace PokeTactics.Api.Utils
 
         // HostedService
         public const string BasePokemonInfoUri = "https://pokeapi.co/api/v2/";
-        public static readonly string AllAbilitiesInfoUri = $"ability/?limit={int.MaxValue}";
-        public static readonly string AllPokemonInfoUri = $"pokemon/?limit={int.MaxValue}";
-        public static readonly string AllMovesInfoUri = $"move/?limit={int.MaxValue}";
+        public static readonly string AllAbilitiesInfoUri = $"ability?limit={int.MaxValue}";
+        public static readonly string AllPokemonInfoUri = $"pokemon?limit={int.MaxValue}";
+        public static readonly string AllMovesInfoUri = $"move?limit={int.MaxValue}";
 
         // SyncServices
         public const int NumberOfRequestsGrantedConcurrently = 5;

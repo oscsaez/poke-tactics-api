@@ -1,7 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using PokeTactics.Core.Interfaces;
-using PokeTactics.Core.Interfaces.Daos;
-using PokeTactics.Infrastructure.Daos;
 using PokeTactics.Infrastructure.Data;
 
 namespace PokeTactics.Infrastructure
@@ -17,13 +15,6 @@ namespace PokeTactics.Infrastructure
         {
             services.AddDbContext<PokeTacticsContext>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
-        }
-
-        public static void AddDaos(this IServiceCollection services)
-        {
-            services.AddScoped<IAbilityDao, AbilityDao>();
-            services.AddScoped<IMoveDao, MoveDao>();
-            services.AddScoped<IPokemonDao, PokemonDao>();
         }
     }
 }

@@ -38,16 +38,22 @@ namespace PokeTactics.Infrastructure.Daos
             await DbSet.Where(x => ids.Contains(x.Id)).ExecuteDeleteAsync();
         }
 
+        // Should be used only for testing
+        public virtual async Task DeleteAllAsync()
+        {
+            await DbSet.ExecuteDeleteAsync();
+        }
+
         public virtual async Task<IEnumerable<TEntity>> LoadAllAsync()
         {
-            return await DbSet.ToListAsync();
+            return await Query().ToListAsync();
         }
 
         public virtual async Task<IEnumerable<TEntity>> LoadAsync(
             Expression<Func<TEntity, bool>>? filter = null,
             Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null)
         {
-            IQueryable<TEntity> query = DbSet;
+            IQueryable<TEntity> query = Query();
 
             if (filter != null)
             {
@@ -71,7 +77,7 @@ namespace PokeTactics.Infrastructure.Daos
 
         public virtual async Task<TEntity?> SingleOrDefaultAsync(Expression<Func<TEntity, bool>> predicate)
         {
-            return await DbSet.SingleOrDefaultAsync(predicate);
+            return await Query().SingleOrDefaultAsync(predicate);
         }
 
         public virtual Task UpdateAsync(TEntity entity)

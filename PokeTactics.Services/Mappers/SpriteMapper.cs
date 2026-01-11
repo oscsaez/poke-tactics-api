@@ -9,11 +9,11 @@ public static class SpriteMapper
     {
         return new Sprite
         {
-            BackFemaleUri = spritePokeApiResponse.BackFeMaleUri,
+            BackFemaleUri = spritePokeApiResponse.BackFemaleUri,
             BackMaleUri = spritePokeApiResponse.BackMaleUri,
             BackShinyFemaleUri = spritePokeApiResponse.BackShinyFemaleUri,
             BackShinyMaleUri = spritePokeApiResponse.BackShinyMaleUri,
-            FrontFemaleUri = spritePokeApiResponse.FrontFeMaleUri,
+            FrontFemaleUri = spritePokeApiResponse.FrontFemaleUri,
             FrontMaleUri = spritePokeApiResponse.FrontMaleUri,
             FrontShinyFemaleUri = spritePokeApiResponse.FrontShinyFemaleUri,
             FrontShinyMaleUri = spritePokeApiResponse.FrontShinyMaleUri,
