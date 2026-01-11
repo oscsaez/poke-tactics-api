@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PokeTactics.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using PokeTactics.Infrastructure.Data;
 namespace PokeTactics.Infrastructure.Migrations
 {
     [DbContext(typeof(PokeTacticsContext))]
-    partial class PokeTacticsContextModelSnapshot : ModelSnapshot
+    [Migration("20260111174753_V101")]
+    partial class V101
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
