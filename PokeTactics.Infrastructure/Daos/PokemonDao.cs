@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PokeTactics.Core.Definitions.Dtos;
 using PokeTactics.Core.Entities;
 using PokeTactics.Core.Interfaces.Daos;
 using PokeTactics.Infrastructure.Data;
@@ -16,6 +17,20 @@ namespace PokeTactics.Infrastructure.Daos
             await Query()
                 .Where(x => names.Contains(x.Name))
                 .ExecuteDeleteAsync();
+        }
+
+        public async Task<ICollection<Pokemon>> Find(KeysetPaginationRequest request)
+        {
+            IQueryable<Pokemon> query = Query().OrderBy(x => x.Id);
+
+            if (request.LastId.HasValue)
+            {
+                query = query.Where(x => x.Id > request.LastId.Value);
+            }
+
+            return await query
+                .Take(request.PageSize)
+                .ToListAsync();
         }
 
         public async Task<Pokemon?> LoadByName(string name)

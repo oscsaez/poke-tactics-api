@@ -5,6 +5,8 @@ using PokeTactics.Infrastructure;
 using System.Text.Json;
 using PokeTactics.Core.Definitions;
 using PokeTactics.Api;
+using PokeTactics.Api.Endpoints;
+using PokeTactics.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 ConfigurationManager configuration = builder.Configuration;
@@ -32,6 +34,7 @@ builder.Services.Configure<PokemonSyncSettings>(
 builder.Services.AddOpenApi();
 builder.Services.AddApiServices();
 builder.Services.AddInfrastructureServices();
+builder.Services.AddServices();
 
 if (!builder.Environment.IsEnvironment(EnvironmentConstants.TestingEnvironmentName))
 {
@@ -60,19 +63,12 @@ var summaries = new[]
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
 };
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+// Health checks
+app.MapGet("/health", () => Results.Ok("Healthy"));
+
+// Route group for Pokemon
+RouteGroupBuilder pokemonGroup = app.MapGroup("/pokemon");
+pokemonGroup.MapPokemonEndpoints();
 
 app.UseMiddleware<ExceptionHandler>();
 

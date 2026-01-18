@@ -1,14 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <ItemGroup>
-    <ProjectReference Include="..\PokeTactics.Contracts\PokeTactics.Contracts.csproj" />
-    <ProjectReference Include="..\PokeTactics.Core\PokeTactics.Core.csproj" />
-  </ItemGroup>
-
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PokeTactics.Contracts\PokeTactics.Contracts.csproj" />
+    <ProjectReference Include="..\PokeTactics.Core\PokeTactics.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.2" />
+  </ItemGroup>
 
 </Project>
