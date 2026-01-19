@@ -9,6 +9,8 @@ namespace PokeTactics.Core.Interfaces.Daos
 
         Task<ICollection<Pokemon>> Find(KeysetPaginationRequest request);
 
+        Task<ICollection<Pokemon>> FindDeep(KeysetPaginationRequest request);
+
         Task<Pokemon?> LoadByName(string name);
 
         Task<IDictionary<string, Pokemon>> LoadMapByName();
