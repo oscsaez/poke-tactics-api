@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <Folder Include="Contexts\" />
+    <Folder Include="Endpoints\" />
     <Folder Include="Utils\" />
   </ItemGroup>
 

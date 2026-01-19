@@ -16,6 +16,11 @@ using PokeTactics.Api.Utils;
 using Microsoft.EntityFrameworkCore;
 using PokeTactics.Infrastructure.Data;
 using PokeTactics.Core.Interfaces;
+using System.Threading.Tasks;
+using System.Net;
+using System.Net.Http.Json;
+using PokeTactics.Core.Utils.Extensions;
+using Microsoft.AspNetCore.HttpsPolicy;
 
 
 namespace PokeTactics.Api.Test.Fixture;
@@ -75,6 +80,11 @@ public class PokeTacticsFixture : IAsyncLifetime
                     services.AddDbContext<PokeTacticsContext>(options =>
                     {
                         options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+                    });
+
+                    services.PostConfigure<HttpsRedirectionOptions>(options =>
+                    {
+                        options.HttpsPort = null;
                     });
 
                     services.AddHttpClient(ExternalApiName, client =>
@@ -169,6 +179,19 @@ public class PokeTacticsFixture : IAsyncLifetime
         PokeApiMockServer
             .Given(Request.Create().WithPath(PokeApiPokemonPath).WithParam(LimitParam, int.MaxValue.ToString()).UsingGet())
             .RespondWith(Response.Create().WithSuccess().WithBodyAsJson(response));
+    }
+
+    #endregion
+
+    #region REST simplified methods
+
+    public async Task<ApiResponse<TResponse>> GetAsync<TResponse>(string requestedUri) where TResponse : class
+    {
+        Uri uri = requestedUri.ToUri(UriKind.Relative);
+        HttpResponseMessage httpResponse = await ApiClient.GetAsync(uri);
+        TResponse? body = await httpResponse.Content.ReadFromJsonAsync<TResponse>();
+
+        return new ApiResponse<TResponse>(body, httpResponse.StatusCode);
     }
 
     #endregion
