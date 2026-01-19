@@ -13,7 +13,6 @@ ConfigurationManager configuration = builder.Configuration;
 string? connectionString = configuration.GetConnectionString(ApiConstants.DefaultConnection);
 
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddDbContext<PokeTacticsContext>(options =>
     options.UseMySql(
         connectionString,
