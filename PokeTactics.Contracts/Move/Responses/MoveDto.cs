@@ -1,5 +1,3 @@
-using System;
-
 namespace PokeTactics.Contracts.Move.Responses;
 
 public class MoveDto
@@ -10,6 +8,9 @@ public class MoveDto
 
     public int? Accuracy { get; set; }
 
+    /// <summary>
+    /// The times that the move can be used
+    /// </summary>
     public int? PowerPoints { get; set; }
 
     public string? Description { get; set; }

@@ -1,7 +1,8 @@
-using System;
-
 namespace PokeTactics.Contracts.Sprite.Responses;
 
+/// <summary>
+/// All the sprites (images) of a pokemon
+/// </summary>
 public class SpriteDto
 {
     public string? OfficialArtworkUri { get; set; }
