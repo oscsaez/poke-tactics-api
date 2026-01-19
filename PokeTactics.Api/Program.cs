@@ -31,7 +31,10 @@ builder.Services.AddControllers()
 builder.Services.Configure<PokemonSyncSettings>(
     builder.Configuration.GetSection("PokemonSync"));
 
-builder.Services.AddOpenApi();
+// Add swagger documentation (API and UI)
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 builder.Services.AddApiServices();
 builder.Services.AddInfrastructureServices();
 builder.Services.AddServices();
@@ -53,7 +56,8 @@ using (var scope = app.Services.CreateScope())
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
