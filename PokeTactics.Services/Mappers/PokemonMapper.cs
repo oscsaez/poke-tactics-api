@@ -1,4 +1,5 @@
 using PokeTactics.Contracts.Pokemon.PokeApi;
+using PokeTactics.Contracts.Pokemon.Responses;
 using PokeTactics.Core.Entities;
 
 namespace PokeTactics.Services.Mappers;
@@ -28,6 +29,25 @@ public static class PokemonMapper
             Stats = pokemonPokeApiResponse.Stats.ToStats()
         };
     }
+
+    // Entity -> DTO
+    public static PokemonDto ToPokemonDto(this Pokemon pokemon)
+    {
+        return new PokemonDto
+        {
+            PokedexOrder = pokemon.PokedexOrder,
+            Name = pokemon.Name,
+            Height = pokemon.Height,
+            Weight = pokemon.Weight,
+            Types = pokemon.Types,
+            Sprite = pokemon.Sprite.ToSpriteDto(),
+            Stats = pokemon.Stats.ToStatDtos(),
+            Abilities = pokemon.AbilitiesInPokemon.ToAbilityDtos(),
+            Moves = pokemon.MovesInPokemon.ToMoveDtos()
+        };
+    }
+
+    public static ICollection<PokemonDto> ToPokemonDtos(this ICollection<Pokemon> pokemonCollection) => [.. pokemonCollection.Select(ToPokemonDto)];
 
     // Entity -> Entity
     public static void MapExisting(

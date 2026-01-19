@@ -21,7 +21,10 @@ namespace PokeTactics.Infrastructure.Daos
 
         public async Task<ICollection<Pokemon>> Find(KeysetPaginationRequest request)
         {
-            IQueryable<Pokemon> query = Query().OrderBy(x => x.Id);
+            IQueryable<Pokemon> query = Query()
+                .OrderBy(x => x.PokedexOrder == null || x.PokedexOrder < 0)
+                .ThenBy(x => x.PokedexOrder)
+                .ThenBy(x => x.Id);
 
             if (request.LastId.HasValue)
             {

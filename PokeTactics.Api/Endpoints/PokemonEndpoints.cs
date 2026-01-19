@@ -1,5 +1,5 @@
+using PokeTactics.Contracts.Pokemon.Responses;
 using PokeTactics.Core.Definitions.Dtos;
-using PokeTactics.Core.Entities;
 using PokeTactics.Services.Facade;
 
 namespace PokeTactics.Api.Endpoints;
@@ -10,10 +10,14 @@ public static class PokemonEndpoints
     {
         groupBuilder.MapGet("/", async ([AsParameters] KeysetPaginationRequest request, IPokemonService pokemonService) =>
         {
-            KeysetPaginationResponse<Pokemon> result = await pokemonService.Find(request);
+            KeysetPaginationResponse<PokemonDto> result = await pokemonService.Find(request);
             return Results.Ok(result);
-        }).WithName("GetPokemon")
-          .WithOpenApi();
+        })
+        .WithName("GetPokemon")
+        .WithSummary("Returns a paginated list of pokemon")
+        .WithDescription(@"Returns a list of pokemon using keyset pagination. 
+            The pokemon are sorted by PokedexOrder and then by Id, but the ones with
+            null or negative PokedexOrder are returned at the end.");
 
         return groupBuilder;
     }
