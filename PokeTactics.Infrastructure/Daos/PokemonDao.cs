@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PokeTactics.Core.Definitions.Dtos;
 using PokeTactics.Core.Entities;
 using PokeTactics.Core.Interfaces.Daos;
 using PokeTactics.Infrastructure.Data;
@@ -18,6 +19,20 @@ namespace PokeTactics.Infrastructure.Daos
                 .ExecuteDeleteAsync();
         }
 
+        public async Task<ICollection<Pokemon>> Find(KeysetPaginationRequest request)
+        {
+            IQueryable<Pokemon> query = Query()
+                .Include(x => x.Sprite)
+                .Include(x => x.Stats);
+
+            return await Find(request, query);
+        }
+
+        public async Task<ICollection<Pokemon>> FindDeep(KeysetPaginationRequest request)
+        {
+            return await Find(request, DeepQuery());
+        }
+
         public async Task<Pokemon?> LoadByName(string name)
         {
             return await Query()
@@ -26,13 +41,30 @@ namespace PokeTactics.Infrastructure.Daos
 
         public async Task<IDictionary<string, Pokemon>> LoadMapByName()
         {
-            return await Query()
+            return await DeepQuery()
                 .ToDictionaryAsync(p => p.Name, p => p);
         }
 
-        protected override IQueryable<Pokemon> Query()
+        private async Task<ICollection<Pokemon>> Find(KeysetPaginationRequest request, IQueryable<Pokemon> query)
         {
-            return base.Query()
+            IQueryable<Pokemon> filterQuery = query
+                .OrderBy(x => x.PokedexOrder == null || x.PokedexOrder < 0)
+                .ThenBy(x => x.PokedexOrder)
+                .ThenBy(x => x.Id);
+
+            if (request.LastId.HasValue)
+            {
+                filterQuery = query.Where(x => x.Id > request.LastId.Value);
+            }
+
+            return await filterQuery
+                .Take(request.PageSize)
+                .ToListAsync();
+        }
+
+        private IQueryable<Pokemon> DeepQuery()
+        {
+            return Query()
                 .Include(p => p.MovesInPokemon)
                     .ThenInclude(mp => mp.Move)
                 .Include(p => p.AbilitiesInPokemon)

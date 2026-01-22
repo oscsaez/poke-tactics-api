@@ -6,4 +6,11 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Ability\Responses\" />
+    <Folder Include="Move\Responses\" />
+    <Folder Include="Sprite\Responses\" />
+    <Folder Include="Stat\Responses\" />
+  </ItemGroup>
+
 </Project>
