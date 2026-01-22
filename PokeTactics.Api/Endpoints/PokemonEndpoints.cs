@@ -19,6 +19,7 @@ public static class PokemonEndpoints
             The pokemon are sorted by PokedexOrder and then by Id, but the ones with
             null or negative PokedexOrder are returned at the end.");
 
+        // TODO: Analyze if the return of data as stats, sprite, height and weight are necessary in this simple API for listing pokemon
         groupBuilder.MapGet("/simple", async ([AsParameters] KeysetPaginationRequest request, IPokemonService pokemonService) =>
         {
             KeysetPaginationResponse<PokemonDto> result = await pokemonService.Find(request);
