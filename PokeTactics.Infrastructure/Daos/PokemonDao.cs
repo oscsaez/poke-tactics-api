@@ -21,7 +21,9 @@ namespace PokeTactics.Infrastructure.Daos
 
         public async Task<ICollection<Pokemon>> Find(KeysetPaginationRequest request)
         {
-            IQueryable<Pokemon> query = Query().Include(x => x.Sprite);
+            IQueryable<Pokemon> query = Query()
+                .Include(x => x.Sprite)
+                .Include(x => x.Stats);
 
             return await Find(request, query);
         }
