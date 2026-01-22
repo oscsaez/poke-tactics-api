@@ -29,6 +29,8 @@
     <Folder Include="Contexts\" />
     <Folder Include="Endpoints\" />
     <Folder Include="Utils\" />
+    <Folder Include="Utils\Builders\" />
+    <Folder Include="Utils\Helpers\" />
   </ItemGroup>
 
 </Project>
