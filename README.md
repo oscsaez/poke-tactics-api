@@ -20,3 +20,10 @@ This API project is built using modern .NET technologies and the following libra
 - **Visual Studio / Visual Studio Code** – IDE for .NET development
 - **.NET CLI** – Command-line tools for building, running, and managing the project
 - **Git** – Version control system
+
+## 📘 API Documentation
+
+This project uses **Swashbuckle** to generate OpenAPI documentation and provide an interactive Swagger UI
+to explore and test the API endpoints.
+
+- **Swashbuckle.AspNetCore (Swagger)** – OpenAPI documentation and interactive UI
