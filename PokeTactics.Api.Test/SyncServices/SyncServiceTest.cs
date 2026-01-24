@@ -2,6 +2,9 @@ using PokeTactics.Api.Test.Contexts;
 using PokeTactics.Api.Test.Fixture;
 using PokeTactics.Api.Test.Utils;
 using PokeTactics.Api.Test.Utils.Helpers;
+using PokeTactics.Contracts.Ability.PokeApi;
+using PokeTactics.Contracts.Move.PokeApi;
+using PokeTactics.Contracts.Pokemon.PokeApi;
 using PokeTactics.Core.Interfaces;
 using PokeTactics.Core.Interfaces.SyncServices;
 
@@ -36,13 +39,15 @@ public class SyncServiceTest : IAsyncLifetime
     {
         // Arrange
         CancellationToken cancellationToken = new();
-        SyncTestContext context = _fixture.SetupPokeApiWithNewPokemon();
+        SyncTestContext context = _fixture.SetupPokeApiWithSingleNewPokemon();
 
         // Act
         await _syncService.Sync(cancellationToken);
 
         // Assert
-        await _fixture.VerifyAbilitiesMovesAndPokemon(context);
+        await _fixture.VerifyAbilities(context.AbilityEffectResponsesByName);
+        await _fixture.VerifyMoves(context.MoveInfoResponsesByName);
+        await _fixture.VerifyPokemon(context.PokemonResponses);
     }
 
     [Fact]
@@ -50,24 +55,35 @@ public class SyncServiceTest : IAsyncLifetime
     {
         // Arrange
         CancellationToken cancellationToken = new();
-        SyncTestContext context = _fixture.SetupPokeApiWithNewPokemon();
+        SyncTestContext context = _fixture.SetupPokeApiWithSingleNewPokemon();
 
         await _syncService.Sync(cancellationToken);
 
-        context.AbilityEffectResponse!.EffectEntries.Single().Effect = TestGenerator.RandomGuidAsString();
-        _fixture.ConfigurePokeApiMockServerForGet(context.AbilitySummaryResponse!.Url, context.AbilityEffectResponse!);
+        AbilityEffectPokeApiResponse updatedAbilityEffect = context.AbilityEffectResponsesByName!.Values.First();
+        string abilitySummaryUri = context.AbilitySummaryResponses.First().Url;
 
-        context.MoveInfoResponse!.EffectEntries.Single().Effect = TestGenerator.RandomGuidAsString();
-        _fixture.ConfigurePokeApiMockServerForGet(context.MoveSummaryResponse!.Url, context.MoveInfoResponse!);
+        updatedAbilityEffect.EffectEntries.First().Effect = TestGenerator.RandomGuidAsString();
+        _fixture.ConfigurePokeApiMockServerForGet(abilitySummaryUri, updatedAbilityEffect);
 
-        context.PokemonResponse!.Order = TestGenerator.RandomInt();
-        _fixture.ConfigurePokeApiMockServerForGet(context.PokemonSummaryResponse!.Url, context.PokemonResponse!);
+        MoveInfoPokeApiResponse updatedMoveInfo = context.MoveInfoResponsesByName.Values.First();
+        string moveSummaryUri = context.MoveSummaryResponses.First().Url;
+
+        updatedMoveInfo.EffectEntries.Single().Effect = TestGenerator.RandomGuidAsString();
+        _fixture.ConfigurePokeApiMockServerForGet(moveSummaryUri, updatedMoveInfo);
+
+        PokemonPokeApiResponse updatedPokemon = context.PokemonResponses.First();
+        string pokemonSummaryUri = context.PokemonSummaryResponses.First().Url;
+
+        updatedPokemon.Order = TestGenerator.RandomInt();
+        _fixture.ConfigurePokeApiMockServerForGet(pokemonSummaryUri, updatedPokemon);
 
         // Act
         await _syncService.Sync(cancellationToken);
 
         // Assert
-        await _fixture.VerifyAbilitiesMovesAndPokemon(context);
+        await _fixture.VerifyAbilities(context.AbilityEffectResponsesByName);
+        await _fixture.VerifyMoves(context.MoveInfoResponsesByName);
+        await _fixture.VerifyPokemon(context.PokemonResponses);
     }
 
     [Fact]
@@ -75,18 +91,22 @@ public class SyncServiceTest : IAsyncLifetime
     {
         // Arrange
         CancellationToken cancellationToken = new();
-        SyncTestContext context1 = _fixture.SetupPokeApiWithNewPokemon();
+        SyncTestContext context1 = _fixture.SetupPokeApiWithSingleNewPokemon();
 
         await _syncService.Sync(cancellationToken);
-        await _fixture.VerifyAbilitiesMovesAndPokemon(context1);
+        await _fixture.VerifyAbilities(context1.AbilityEffectResponsesByName);
+        await _fixture.VerifyMoves(context1.MoveInfoResponsesByName);
+        await _fixture.VerifyPokemon(context1.PokemonResponses);
 
-        SyncTestContext context2 = _fixture.SetupPokeApiWithNewPokemon();
+        SyncTestContext context2 = _fixture.SetupPokeApiWithSingleNewPokemon();
 
         // Act
         await _syncService.Sync(cancellationToken);
 
         // Arrange
-        await _fixture.VerifyAbilitiesMovesAndPokemon(context2);
+        await _fixture.VerifyAbilities(context2.AbilityEffectResponsesByName);
+        await _fixture.VerifyMoves(context2.MoveInfoResponsesByName);
+        await _fixture.VerifyPokemon(context2.PokemonResponses);
     }
 
 }

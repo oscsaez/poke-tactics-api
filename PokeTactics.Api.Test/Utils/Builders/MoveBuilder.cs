@@ -7,16 +7,28 @@ public static class MoveBuilder
 {
     public static MoveSummaryListPokeApiResponse BuildMoveSummaryListPokeApiResponse()
     {
+        const int One = 1;
+
+        return BuildMoveSummaryListPokeApiResponse(One);
+    }
+
+    public static MoveSummaryListPokeApiResponse BuildMoveSummaryListPokeApiResponse(int numberOfMoves)
+    {
+        List<MoveSummaryPokeApiResponse> moveSummaries = new(numberOfMoves);
+
+        for (int i = 0; i < numberOfMoves; i++)
+        {
+            moveSummaries.Add(new MoveSummaryPokeApiResponse
+            {
+                Name = TestGenerator.RandomName(),
+                Url = TestGenerator.RandomPath()
+            });
+        }
+
         return new MoveSummaryListPokeApiResponse
         {
-            Count = 1,
-            Results = [
-                new MoveSummaryPokeApiResponse
-                {
-                    Name = TestGenerator.RandomName(),
-                    Url = TestGenerator.RandomPath()
-                }
-            ]
+            Count = numberOfMoves,
+            Results = moveSummaries
         };
     }
 

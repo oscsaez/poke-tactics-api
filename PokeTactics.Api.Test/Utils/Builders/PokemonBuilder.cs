@@ -11,16 +11,23 @@ public static class PokemonBuilder
 {
     public static PokemonSummaryListPokeApiResponse BuildPokemonSummaryListPokeApiResponse(string name)
     {
+        return BuildPokemonSummaryListPokeApiResponse([name]);
+    }
+
+    public static PokemonSummaryListPokeApiResponse BuildPokemonSummaryListPokeApiResponse(IEnumerable<string> names)
+    {
+        List<PokemonSummaryPokeApiResponse> pokemonSummaries = names
+            .Select(x => new PokemonSummaryPokeApiResponse
+            {
+                Name = x,
+                Url = TestGenerator.RandomPath()
+            })
+            .ToList();
+
         return new PokemonSummaryListPokeApiResponse
         {
-            Count = 1,
-            Results = [
-                new PokemonSummaryPokeApiResponse
-                {
-                    Name = name,
-                    Url = TestGenerator.RandomPath()
-                }
-            ]
+            Count = pokemonSummaries.Count,
+            Results = pokemonSummaries
         };
     }
 
