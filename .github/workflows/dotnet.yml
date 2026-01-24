@@ -45,9 +45,9 @@ jobs:
     - name: Generate coverage report
       run: |
         reportgenerator \
-        -reports:coverage/**/coverage.coverage.xml \
+        -reports:coverage/**/coverage.cobertura.xml \
         -targetdir:coverage-report \
-        -reporttypes:TestSummary
+        -reporttypes:TextSummary
     - name: Check coverage threshold
       run: |
         COVERAGE=$(grep -oP 'Line coverage:\s+\K\d+(\.\d+)?' coverage-report/Summary.txt)
