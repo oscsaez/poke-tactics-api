@@ -44,6 +44,12 @@ jobs:
       run: dotnet tool install --global dotnet-reportgenerator-globaltool
     - name: Generate coverage report
       run: |
+        reportgenerator \
+        -reports:coverage/**/coverage.coverage.xml \
+        -targetdir:coverage-report \
+        -reporttypes:TestSummary
+    - name: Check coverage threshold
+      run: |
         COVERAGE=$(grep -oP 'Line coverage:\s+\K\d+(\.\d+)?' coverage-report/Summary.txt)
         echo "Coverage: $COVERAGE%"
         awk "BEGIN {exit !($COVERAGE >= 80)}"
