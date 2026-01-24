@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PokeTactics.Contracts.Common.Responses;
 using PokeTactics.Core.Exceptions;
 
 namespace PokeTactics.Api.Utils
@@ -36,10 +37,7 @@ namespace PokeTactics.Api.Utils
                 _ => StatusCodes.Status500InternalServerError
             };
 
-            var result = JsonSerializer.Serialize(new
-            {
-                error = ex.Message
-            });
+            var result = JsonSerializer.Serialize(new ErrorResponse(ex.Message));
 
             context.Response.ContentType = ApiConstants.ContentType;
             context.Response.StatusCode = statusCode;
