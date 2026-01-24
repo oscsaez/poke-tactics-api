@@ -6,9 +6,9 @@ namespace PokeTactics.Core.Interfaces.Daos
     {
         Task DeleteByNames(IEnumerable<string> names);
 
-        Task<ICollection<Pokemon>> Find(int pageSize, int? lastId);
+        Task<ICollection<Pokemon>> Find(int pageSize, int? lastPokedexOrder, int? lastId);
 
-        Task<ICollection<Pokemon>> FindDeep(int pageSize, int? lastId);
+        Task<ICollection<Pokemon>> FindDeep(int pageSize, int? lastPokedexOrder, int? lastId);
 
         Task<Pokemon?> LoadByName(string name);
 
