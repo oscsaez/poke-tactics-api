@@ -1,4 +1,4 @@
-namespace PokeTactics.Core.Definitions.Dtos;
+namespace PokeTactics.Contracts.Common.Requests;
 
 public record KeysetPaginationRequest(
     int PageSize,

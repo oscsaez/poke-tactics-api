@@ -2,8 +2,8 @@ using System.Net;
 using PokeTactics.Api.Test.Fixture;
 using PokeTactics.Api.Test.Utils;
 using PokeTactics.Api.Test.Utils.Helpers;
+using PokeTactics.Contracts.Common.Responses;
 using PokeTactics.Contracts.Pokemon.Responses;
-using PokeTactics.Core.Definitions.Dtos;
 
 namespace PokeTactics.Api.Test.Endpoints;
 

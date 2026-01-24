@@ -1,4 +1,3 @@
-using PokeTactics.Core.Definitions.Dtos;
 using PokeTactics.Core.Entities;
 
 namespace PokeTactics.Core.Interfaces.Daos
@@ -7,9 +6,9 @@ namespace PokeTactics.Core.Interfaces.Daos
     {
         Task DeleteByNames(IEnumerable<string> names);
 
-        Task<ICollection<Pokemon>> Find(KeysetPaginationRequest request);
+        Task<ICollection<Pokemon>> Find(int pageSize, int? lastId);
 
-        Task<ICollection<Pokemon>> FindDeep(KeysetPaginationRequest request);
+        Task<ICollection<Pokemon>> FindDeep(int pageSize, int? lastId);
 
         Task<Pokemon?> LoadByName(string name);
 
