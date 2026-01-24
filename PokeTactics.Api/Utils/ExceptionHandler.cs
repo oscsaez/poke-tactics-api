@@ -32,6 +32,7 @@ namespace PokeTactics.Api.Utils
             int statusCode = ex switch
             {
                 EntityDoesNotExistException => StatusCodes.Status404NotFound,
+                InvalidRequestException => StatusCodes.Status400BadRequest,
                 _ => StatusCodes.Status500InternalServerError
             };
 
