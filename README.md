@@ -1,3 +1,6 @@
+[![.NET CI](https://github.com/oscsaez/poke-tactics-api/actions/workflows/dotnet.yml/badge.svg)](https://github.com/oscsaez/poke-tactics-api/actions/workflows/dotnet.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=oscsaez_poke-tactics-api&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=oscsaez_poke-tactics-api)
+
 # PokeTactics (back-end)
 API for PokeTactics app.
 
