@@ -39,7 +39,7 @@ jobs:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: |
         dotnet sonarscanner begin \
-          /k:"poke-tactics-api" \
+          /k:"oscsaez_poke-tactics-api" \
           /o:"oscsaez" \
           /d:sonar.host.url="https://sonarcloud.io" \
           /d:sonar.login="${SONAR_TOKEN}" \
