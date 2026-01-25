@@ -1,4 +1,3 @@
-using PokeTactics.Api.Test.Contexts;
 using PokeTactics.Api.Test.Fixture;
 using PokeTactics.Contracts.Ability.PokeApi;
 using PokeTactics.Contracts.Move.PokeApi;
@@ -11,26 +10,15 @@ namespace PokeTactics.Api.Test.Utils.Helpers;
 
 public static class PokemonVerifier
 {
-    public static async Task VerifyAbilitiesMovesAndPokemon(this PokeTacticsFixture fixture, SyncTestContext context)
+    public static async Task VerifyPokemonDto(this PokeTacticsFixture fixture, PokemonDto response, PokemonDto previousResponse)
     {
-        Dictionary<string, AbilityEffectPokeApiResponse> abilityEffectByNameMap = new()
-        {
-            { context.AbilitySummaryResponse!.Name, context.AbilityEffectResponse! }
-        };
-
-        Dictionary<string, MoveInfoPokeApiResponse> movesInfoByNameMap = new()
-        {
-            { context.MoveSummaryResponse!.Name, context.MoveInfoResponse! }
-        };
-
-        await fixture.VerifyAbilities(abilityEffectByNameMap);
-        await fixture.VerifyMoves(movesInfoByNameMap);
-        await fixture.VerifyPokemon([context.PokemonResponse!]);
+        await fixture.VerifyPokemonDto(response);
+        Assert.True(response.PokedexOrder > previousResponse.PokedexOrder);
     }
 
     public static async Task VerifyPokemonDto(this PokeTacticsFixture fixture, PokemonDto response)
     {
-        Pokemon expectedPokemon = await fixture.GetPokemon();
+        Pokemon expectedPokemon = await fixture.GetPokemon(response.Name);
 
         VerifySimplePokemonDto(expectedPokemon, response);
         SpriteVerifier.VerifySpriteDto(expectedPokemon.Sprite, response.Sprite);
@@ -38,13 +26,19 @@ public static class PokemonVerifier
         MoveVerifier.VerifyMoveDtos([.. expectedPokemon.MovesInPokemon.Select(x => x.Move)], response.Moves);
     }
 
+    public static async Task VerifySimplePokemonDto(this PokeTacticsFixture fixture, PokemonDto response, PokemonDto previousResponse)
+    {
+        await fixture.VerifySimplePokemonDto(response);
+        Assert.True(response.PokedexOrder > previousResponse.PokedexOrder);
+    }
+
     public static async Task VerifySimplePokemonDto(this PokeTacticsFixture fixture, PokemonDto response)
     {
-        Pokemon expectedPokemon = await fixture.GetPokemon();
+        Pokemon expectedPokemon = await fixture.GetPokemon(response.Name);
         VerifySimplePokemonDto(expectedPokemon, response);
     }
 
-    private static async Task VerifyPokemon(this PokeTacticsFixture fixture, IEnumerable<PokemonPokeApiResponse> pokemonResponseList)
+    public static async Task VerifyPokemon(this PokeTacticsFixture fixture, IEnumerable<PokemonPokeApiResponse> pokemonResponseList)
     {
         IUnitOfWork unitOfWork = fixture.GetService<IUnitOfWork>();
         IEnumerable<Pokemon> allPokemons = await unitOfWork.PokemonDao.LoadAllAsync();
@@ -92,11 +86,13 @@ public static class PokemonVerifier
         Assert.Equal(expectedPokemon.Stats.ToDictionary(x => x.Name, x => x.Base), actualPokemon.Stats.ToDictionary(x => x.Name, x => x.Base));
     }
 
-    private static async Task<Pokemon> GetPokemon(this PokeTacticsFixture fixture)
+    private static async Task<Pokemon> GetPokemon(this PokeTacticsFixture fixture, string name)
     {
         IUnitOfWork unitOfWork = fixture.GetService<IUnitOfWork>();
-        IEnumerable<Pokemon> allPokemons = await unitOfWork.PokemonDao.LoadAllAsync();
-        
-        return Assert.Single(allPokemons);
+        Pokemon? pokemon = await unitOfWork.PokemonDao.LoadByName(name);
+
+        Assert.NotNull(pokemon);
+
+        return pokemon;
     }
 }

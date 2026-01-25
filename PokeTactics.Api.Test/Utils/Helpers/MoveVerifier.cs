@@ -29,6 +29,9 @@ public static class MoveVerifier
         Assert.Equal(expectedMoves.Count, actualMoves.Count);
         int numberOfMoves = actualMoves.Count;
 
+        expectedMoves = expectedMoves.OrderBy(x => x.Name).ToList();
+        actualMoves = actualMoves.OrderBy(x => x.Name).ToList();
+
         for (int i = 0; i < numberOfMoves; i++)
         {
             VerifyMoveDto(expectedMoves.ElementAt(i), actualMoves.ElementAt(i));

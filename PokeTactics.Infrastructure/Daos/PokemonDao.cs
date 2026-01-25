@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using PokeTactics.Core.Definitions.Dtos;
 using PokeTactics.Core.Entities;
 using PokeTactics.Core.Interfaces.Daos;
 using PokeTactics.Infrastructure.Data;
@@ -19,18 +18,18 @@ namespace PokeTactics.Infrastructure.Daos
                 .ExecuteDeleteAsync();
         }
 
-        public async Task<ICollection<Pokemon>> Find(KeysetPaginationRequest request)
+        public async Task<ICollection<Pokemon>> Find(int pageSize, int? lastPokedexOrder, int? lastId)
         {
             IQueryable<Pokemon> query = Query()
                 .Include(x => x.Sprite)
                 .Include(x => x.Stats);
 
-            return await Find(request, query);
+            return await Find(pageSize, lastPokedexOrder, lastId, query);
         }
 
-        public async Task<ICollection<Pokemon>> FindDeep(KeysetPaginationRequest request)
+        public async Task<ICollection<Pokemon>> FindDeep(int pageSize, int? lastPokedexOrder, int? lastId)
         {
-            return await Find(request, DeepQuery());
+            return await Find(pageSize, lastPokedexOrder, lastId, DeepQuery());
         }
 
         public async Task<Pokemon?> LoadByName(string name)
@@ -45,20 +44,22 @@ namespace PokeTactics.Infrastructure.Daos
                 .ToDictionaryAsync(p => p.Name, p => p);
         }
 
-        private async Task<ICollection<Pokemon>> Find(KeysetPaginationRequest request, IQueryable<Pokemon> query)
+        private static async Task<ICollection<Pokemon>> Find(int pageSize, int? lastPokedexOrder, int? lastId, IQueryable<Pokemon> query)
         {
             IQueryable<Pokemon> filterQuery = query
                 .OrderBy(x => x.PokedexOrder == null || x.PokedexOrder < 0)
                 .ThenBy(x => x.PokedexOrder)
                 .ThenBy(x => x.Id);
 
-            if (request.LastId.HasValue)
+            if (lastPokedexOrder.HasValue && lastId.HasValue)
             {
-                filterQuery = query.Where(x => x.Id > request.LastId.Value);
+                filterQuery = filterQuery.Where(x => 
+                    x.PokedexOrder > lastPokedexOrder ||
+                    (x.PokedexOrder == lastPokedexOrder && x.Id > lastId));
             }
 
             return await filterQuery
-                .Take(request.PageSize)
+                .Take(pageSize)
                 .ToListAsync();
         }
 

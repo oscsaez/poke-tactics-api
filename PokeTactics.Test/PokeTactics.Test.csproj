@@ -18,4 +18,12 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\PokeTactics.Core\PokeTactics.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Core\Utils\Attributes\" />
+  </ItemGroup>
+
 </Project>

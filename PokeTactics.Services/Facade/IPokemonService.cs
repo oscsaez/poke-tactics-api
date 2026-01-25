@@ -1,5 +1,6 @@
+using PokeTactics.Contracts.Common.Requests;
+using PokeTactics.Contracts.Common.Responses;
 using PokeTactics.Contracts.Pokemon.Responses;
-using PokeTactics.Core.Definitions.Dtos;
 
 namespace PokeTactics.Services.Facade;
 

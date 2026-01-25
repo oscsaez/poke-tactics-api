@@ -6,15 +6,16 @@ namespace PokeTactics.Api.Test.Contexts;
 
 public class SyncTestContext
 {
-    public AbilitySummaryPokeApiResponse? AbilitySummaryResponse { get; set; }
+    public ICollection<AbilitySummaryPokeApiResponse> AbilitySummaryResponses { get; set; } = [];
 
-    public AbilityEffectPokeApiResponse? AbilityEffectResponse { get; set; }
+    public IDictionary<string, AbilityEffectPokeApiResponse> AbilityEffectResponsesByName { get; set; } =
+        new Dictionary<string, AbilityEffectPokeApiResponse>();
 
-    public MoveSummaryPokeApiResponse? MoveSummaryResponse { get; set; }
+    public ICollection<MoveSummaryPokeApiResponse> MoveSummaryResponses { get; set; } = [];
 
-    public MoveInfoPokeApiResponse? MoveInfoResponse { get; set; }
+    public IDictionary<string, MoveInfoPokeApiResponse> MoveInfoResponsesByName { get; set; } = new Dictionary<string, MoveInfoPokeApiResponse>();
 
-    public PokemonSummaryPokeApiResponse? PokemonSummaryResponse { get; set; }
+    public ICollection<PokemonSummaryPokeApiResponse> PokemonSummaryResponses { get; set; } = [];
 
-    public PokemonPokeApiResponse? PokemonResponse { get; set; }
+    public ICollection<PokemonPokeApiResponse> PokemonResponses { get; set; } = [];
 }

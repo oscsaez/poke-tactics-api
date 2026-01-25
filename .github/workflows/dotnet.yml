@@ -34,5 +34,22 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build --no-restore
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+    - name: Test with coverage
+      run: |
+        dotnet test \
+          --no-build \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./coverage
+    - name: Install ReportGenerator
+      run: dotnet tool install --global dotnet-reportgenerator-globaltool
+    - name: Generate coverage report
+      run: |
+        reportgenerator \
+        -reports:coverage/**/coverage.cobertura.xml \
+        -targetdir:coverage-report \
+        -reporttypes:TextSummary
+    - name: Check coverage threshold
+      run: |
+        COVERAGE=$(grep -oP 'Line coverage:\s+\K\d+(\.\d+)?' coverage-report/Summary.txt)
+        echo "Coverage: $COVERAGE%"
+        awk "BEGIN {exit !($COVERAGE >= 70)}"

@@ -2,8 +2,9 @@ using System.Net;
 using PokeTactics.Api.Test.Fixture;
 using PokeTactics.Api.Test.Utils;
 using PokeTactics.Api.Test.Utils.Helpers;
+using PokeTactics.Contracts.Common.Requests;
+using PokeTactics.Contracts.Common.Responses;
 using PokeTactics.Contracts.Pokemon.Responses;
-using PokeTactics.Core.Definitions.Dtos;
 
 namespace PokeTactics.Api.Test.Endpoints;
 
@@ -23,68 +24,6 @@ public class PokemonEndpointsTest : IAsyncLifetime
         _fixture = fixture;
     }
 
-    [Fact]
-    public async Task GetPokemon_ThereAreNoPokemon_ReturnsKeysetPaginationResponseWithoutItemsAndNextLastIdNull()
-    {
-        // Act
-        ApiResponse<KeysetPaginationResponse<PokemonDto>> response = 
-            await _fixture.GetAsync<KeysetPaginationResponse<PokemonDto>>(DefaultUriForGetPokemon);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.NotNull(response.Body);
-        Assert.Empty(response.Body.Items);
-        Assert.Null(response.Body.NextLastId);
-    }
-
-    [Fact]
-    public async Task GetPokemon_ReturnsKeysetPaginationResponseWithItemsAndNextLastIdFilled()
-    {
-        // Arrange
-        await _fixture.SetupSyncPokemon();
-
-        // Act
-        ApiResponse<KeysetPaginationResponse<PokemonDto>> response = 
-            await _fixture.GetAsync<KeysetPaginationResponse<PokemonDto>>(DefaultUriForGetPokemon);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.NotNull(response.Body);
-        PokemonDto pokemon = Assert.Single(response.Body.Items);
-
-        await _fixture.VerifyPokemonDto(pokemon);
-    }
-
-    [Fact]
-    public async Task GetPokemonSimple_ThereAreNoPokemon_ReturnsKeysetPaginationResponseWithoutItemsAndNextLastIdNull()
-    {
-        // Act
-        ApiResponse<KeysetPaginationResponse<PokemonDto>> response = await _fixture.GetAsync<KeysetPaginationResponse<PokemonDto>>(DefaultUriForGetPokemonSimple);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.NotNull(response.Body);
-        Assert.Empty(response.Body.Items);
-        Assert.Null(response.Body.NextLastId);
-    }
-
-    [Fact]
-    public async Task GetPokemonSimple_ReturnsKeysetPaginationResponseWithItemsAndNextLastIdFilled()
-    {
-        // Arrange
-        await _fixture.SetupSyncPokemon();
-
-        // Act
-        ApiResponse<KeysetPaginationResponse<PokemonDto>> response = await _fixture.GetAsync<KeysetPaginationResponse<PokemonDto>>(DefaultUriForGetPokemonSimple);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.NotNull(response.Body);
-        PokemonDto pokemon = Assert.Single(response.Body.Items);
-        
-        await _fixture.VerifySimplePokemonDto(pokemon);
-    }
-
     public Task InitializeAsync()
     {
         return Task.CompletedTask;
@@ -93,5 +32,144 @@ public class PokemonEndpointsTest : IAsyncLifetime
     public async Task DisposeAsync()
     {
         await _fixture.DeleteAll();
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task GetPokemon_ThereAreNoPokemon_ReturnsKeysetPaginationResponseWithoutItemsAndNextLastIdNull(bool isSimpleApi)
+    {
+        // Arrange
+        string uri = isSimpleApi ? DefaultUriForGetPokemonSimple : DefaultUriForGetPokemon;
+
+        // Act
+        ApiResponse<KeysetPaginationResponse<PokemonDto>> response = await _fixture.GetAsync<KeysetPaginationResponse<PokemonDto>>(uri);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(response.Body);
+        Assert.Empty(response.Body.Items);
+        Assert.Null(response.Body.NextLastId);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task GetPokemon_ReturnsKeysetPaginationResponseWithItemsAndNextLastIdFilled(bool isSimpleApi)
+    {
+        // Arrange
+        await _fixture.SetupSyncSinglePokemon();
+
+        string uri = isSimpleApi ? DefaultUriForGetPokemonSimple : DefaultUriForGetPokemon;
+
+        // Act
+        ApiResponse<KeysetPaginationResponse<PokemonDto>> response = await _fixture.GetAsync<KeysetPaginationResponse<PokemonDto>>(uri);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(response.Body);
+        PokemonDto pokemon = Assert.Single(response.Body.Items);
+
+        await VerifyPokemonDto(isSimpleApi, pokemon);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task GetPokemon_RequestWithNextLastPokedexOrderAndNextLastId_ReturnsPokemonInTheRightOrder(bool isSimpleApi)
+    {
+        // Arrange
+        const int NumberOfPokemon = 3;
+
+        await _fixture.SetupSyncPokemon(NumberOfPokemon);
+
+        string defaultUri = isSimpleApi ? DefaultUriForGetPokemonSimple : DefaultUriForGetPokemon;
+        string uri = isSimpleApi ? DefaultUriForGetPokemonSimple : DefaultUriForGetPokemon;
+        PokemonDto? previousPokemon = null;
+
+        // Act & Assert
+        for (int i = 0; i < NumberOfPokemon; i++)
+        {
+            ApiResponse<KeysetPaginationResponse<PokemonDto>> response =
+                await _fixture.GetAsync<KeysetPaginationResponse<PokemonDto>>(uri);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.NotNull(response.Body);
+
+            PokemonDto currentPokemon = Assert.Single(response.Body.Items);
+
+            if (previousPokemon is null)
+            {
+                await VerifyPokemonDto(isSimpleApi, currentPokemon);
+            }
+            else
+            {
+                await VerifyPokemonDto(isSimpleApi, currentPokemon, previousPokemon);
+            }
+
+            previousPokemon = currentPokemon;
+
+            uri =
+                $"{defaultUri}" +
+                $"&LastPokedexOrder={response.Body.NextLastPokedexOrder}" +
+                $"&LastId={response.Body.NextLastId}";
+        }
+    }
+
+    [Theory]
+    [InlineData(false, null, 1)]
+    [InlineData(false, 1, null)]
+    [InlineData(true, null, 1)]
+    [InlineData(true, 1, null)]
+    public async Task GetPokemon_RequestWithoutOneCursor_ReturnsBadRequest(bool isSimpleApi, int? nextLastPokedexOrder, int? nextLastId)
+    {
+        // Arrange
+        string expectedErrorMessage = $"Both {nameof(KeysetPaginationRequest.LastPokedexOrder)} and {nameof(KeysetPaginationRequest.LastId)} " +
+                "or no one must be provided";
+
+        string defaultUri = isSimpleApi ? DefaultUriForGetPokemonSimple : DefaultUriForGetPokemon;
+        string uri = $"{defaultUri}";
+
+        if (nextLastPokedexOrder.HasValue)
+        {
+            uri += $"&LastPokedexOrder={nextLastPokedexOrder}";
+        }
+
+        if (nextLastId.HasValue)
+        {
+            uri += $"&LastId={nextLastId}";
+        }
+
+        // Act
+        ApiResponse<ErrorResponse> response = await _fixture.GetAsync<ErrorResponse>(uri);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.NotNull(response.Body);
+        Assert.Equal(expectedErrorMessage, response.Body.ErrorMessage);
+    }
+
+    private async Task VerifyPokemonDto(bool isSimpleApi, PokemonDto pokemon)
+    {
+        if(isSimpleApi)
+        {
+            await _fixture.VerifySimplePokemonDto(pokemon);
+        }
+        else
+        {
+            await _fixture.VerifyPokemonDto(pokemon);
+        }
+    }
+
+    private async Task VerifyPokemonDto(bool isSimpleApi, PokemonDto currentPokemon, PokemonDto previousPokemon)
+    {
+        if(isSimpleApi)
+        {
+            await _fixture.VerifySimplePokemonDto(currentPokemon, previousPokemon);
+        }
+        else
+        {
+            await _fixture.VerifyPokemonDto(currentPokemon, previousPokemon);
+        }
     }
 }
