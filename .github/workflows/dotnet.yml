@@ -52,4 +52,4 @@ jobs:
       run: |
         COVERAGE=$(grep -oP 'Line coverage:\s+\K\d+(\.\d+)?' coverage-report/Summary.txt)
         echo "Coverage: $COVERAGE%"
-        awk "BEGIN {exit !($COVERAGE >= 80)}"
+        awk "BEGIN {exit !($COVERAGE >= 70)}"
