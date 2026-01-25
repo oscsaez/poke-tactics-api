@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PokeTactics.Core.Utils.Attributes
 {
+    // TODO: If I am not using this attributes in requests in controllers/minimal APIs I shoul validate manually (Validator.ValidateObject())
     [AttributeUsage(AttributeTargets.Property)]
     public class MaxListCountAttribute : ValidationAttribute
     {
