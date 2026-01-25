@@ -26,30 +26,35 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 9.0.300
+    - name: Install SonarScanner
+      run: dotnet tool install --global dotnet-sonarscanner
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
       run: dotnet build --no-restore
+    - name: Sonar Begin
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: |
+        dotnet sonarscanner begin \
+          /k:"poke-tactics-api" \
+          /o:"oscsaez" \
+          /d:sonar.host..url="https://sonarcloud.io" \
+          /d:sonar.cs.opencover.reportsPaths="coverage/**/coverage.opencover.xml"
     - name: Test with coverage
       run: |
         dotnet test \
           --no-build \
-          --collect:"XPlat Code Coverage" \
-          --results-directory ./coverage
-    - name: Install ReportGenerator
-      run: dotnet tool install --global dotnet-reportgenerator-globaltool
-    - name: Generate coverage report
-      run: |
-        reportgenerator \
-        -reports:coverage/**/coverage.cobertura.xml \
-        -targetdir:coverage-report \
-        -reporttypes:TextSummary
-    - name: Check coverage threshold
-      run: |
-        COVERAGE=$(grep -oP 'Line coverage:\s+\K\d+(\.\d+)?' coverage-report/Summary.txt)
-        echo "Coverage: $COVERAGE%"
-        awk "BEGIN {exit !($COVERAGE >= 70)}"
+          /p:CollectCoverage=true \
+          /p:CoverletOutputFormat=opencover \
+          /p:CoverletOutput=coverage/
+    - name: Sonar End
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: dotnet sonarscanner end
