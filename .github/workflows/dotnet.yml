@@ -43,7 +43,7 @@ jobs:
           /o:"oscsaez" \
           /d:sonar.host.url="https://sonarcloud.io" \
           /d:sonar.login="${SONAR_TOKEN}" \
-          /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
+          /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.opencover.xml"
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
@@ -52,9 +52,9 @@ jobs:
       run: |
         dotnet test \
           --no-build \
-          /p:CollectCoverage=true \
-          /p:CoverletOutputFormat=opencover \
-          /p:CoverletOutput=coverage/
+          --verbosity normal \
+          --collect:"XPlat Code Coverage" \
+          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
     - name: Sonar End
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
