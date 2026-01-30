@@ -19,4 +19,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <SonarQubeSettings Include="sonar.exclusions">
+      <Value>**/Migrations/**</Value>
+    </SonarQubeSettings>
+  </ItemGroup>
+
 </Project>

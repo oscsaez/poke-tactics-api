@@ -2,7 +2,7 @@ using PokeTactics.Core.Utils.Extensions;
 
 namespace PokeTactics.Test.Core.Utils.Extensions;
 
-public class CollectionsExtensionsTest
+public class CollectionExtensionsTest
 {
     [Fact]
     public void AddRange_AddsEveryElementOfOneCollectionToAnother()
@@ -10,7 +10,7 @@ public class CollectionsExtensionsTest
         // Arrange
         ICollection<string> firstList = ["a", "b", "c"];
         ICollection<string> secondList = ["d", "e", "f"];
-        ICollection<string> firstListCopy = firstList.ToList();
+        ICollection<string> firstListCopy = [.. firstList];
 
         // Act
         firstList.AddRange(secondList);

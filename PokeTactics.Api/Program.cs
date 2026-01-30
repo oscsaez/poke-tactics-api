@@ -49,7 +49,7 @@ WebApplication app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PokeTacticsContext>();
-    db.Database.Migrate();
+    await db.Database.MigrateAsync();
 }
 
 // Configure the HTTP request pipeline.
@@ -61,11 +61,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
 app.UseMiddleware<ExceptionHandler>();
 
 // Health checks
@@ -75,6 +70,11 @@ app.MapGet("/health", () => Results.Ok("Healthy"));
 RouteGroupBuilder pokemonGroup = app.MapGroup("/pokemon");
 pokemonGroup.MapPokemonEndpoints();
 
-app.Run();
+await app.RunAsync();
 
-public partial class Program {}
+public partial class Program
+{
+    protected Program()
+    {
+    }
+}
