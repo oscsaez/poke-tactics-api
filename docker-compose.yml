@@ -1,0 +1,41 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: poketactics_db
+    restart: always
+    environment:
+      - MYSQL_DATABASE=poketactics
+      - MYSQL_ROOT_PASSWORD=password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+        reservations:
+          memory: 128M
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: poketactics_api
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+    environment:
+      - ConnectionStrings__DefaultConnection=server=db;database=poketactics;user=root;password=password;
+      - ASPNETCORE_ENVIRONMENT=Development
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+        reservations:
+          memory: 128M
+
+volumes:
+  mysql_data:
