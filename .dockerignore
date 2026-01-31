@@ -1,0 +1,8 @@
+.env
+.git
+.vscode
+bin/
+obj/
+out/
+TestResults/
+*.db
