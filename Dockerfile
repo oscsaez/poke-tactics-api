@@ -11,7 +11,13 @@ RUN for file in $(ls *.csproj); do mkdir -p ${file%.*}/ && mv $file ${file%.*}/;
 RUN dotnet restore
 
 # 3. Copy rest of the code
-COPY . .
+COPY PokeTactics.Api/PokeTactics.Api.csproj PokeTactics.Api/
+COPY PokeTactics.Api.Test/PokeTactics.Api.Test.csproj PokeTactics.Api.Test/
+COPY PokeTactics.Contracts/PokeTactics.Contracts.csproj PokeTactics.Contracts/
+COPY PokeTactics.Core/PokeTactics.Core.csproj PokeTactics.Core/
+COPY PokeTactics.Infrastructure/PokeTactics.Infrastructure.csproj PokeTactics.Infrastructure/
+COPY PokeTactics.Services/PokeTactics.Services.csproj PokeTactics.Services/
+COPY PokeTactics.Test/PokeTactics.Test.csproj PokeTactics.Test/
 
 # 4. Publish API project
 FROM build AS publish
