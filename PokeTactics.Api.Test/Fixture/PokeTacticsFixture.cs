@@ -9,32 +9,33 @@ using PokeTactics.Contracts.Pokemon.PokeApi;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Hosting;
 using PokeTactics.Api.Test.Utils;
-using MySqlConnector;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using PokeTactics.Api.Utils;
 using Microsoft.EntityFrameworkCore;
 using PokeTactics.Infrastructure.Data;
 using PokeTactics.Core.Interfaces;
-using System.Threading.Tasks;
-using System.Net;
 using System.Net.Http.Json;
 using PokeTactics.Core.Utils.Extensions;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Testcontainers.MySql;
 
 
 namespace PokeTactics.Api.Test.Fixture;
 
 public class PokeTacticsFixture : IAsyncLifetime
 {
-    private const string RootConnectionString = "server=localhost;user=root;password=password;port=3333;";
+    private const string DbImageVariableName = "DB_IMAGE";
+    private const string DbNameVariableName = "DB_NAME";
+    private const string DbUsernameVariableName = "DB_USER";
+    private const string DbPasswordVariableName = "DB_PASSWORD";
     private const string ExternalApiName = "PokeApi";
     private const string PokeApiAbilityPath = "/ability";
     private const string PokeApiMovePath = "/move";
     private const string PokeApiPokemonPath = "/pokemon";
     private const string LimitParam = "limit";
 
-    private readonly string _databaseName = $"poketactics_test_{TestGenerator.RandomGuidAsString()}";
+    private MySqlContainer _dbContainer = null!;
 
     public HttpClient ApiClient { get; private set; } = null!;
 
@@ -44,16 +45,22 @@ public class PokeTacticsFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        // Database configuration
-        await using (var connection = new MySqlConnection(RootConnectionString))
-        {
-            await connection.OpenAsync();
-            await using var command = connection.CreateCommand();
-            command.CommandText = $"CREATE DATABASE `{_databaseName}`;";
-            await command.ExecuteNonQueryAsync();
-        }
+        // Database container configuration
+        DotNetEnv.Env.TraversePath().Load();
 
-        string connectionString = $"{RootConnectionString}database={_databaseName};";
+        _dbContainer = new MySqlBuilder(Environment.GetEnvironmentVariable(DbImageVariableName))
+            .WithDatabase(Environment.GetEnvironmentVariable(DbNameVariableName) + TestGenerator.RandomGuidAsString())
+            .WithUsername(Environment.GetEnvironmentVariable(DbUsernameVariableName))
+            .WithPassword(Environment.GetEnvironmentVariable(DbPasswordVariableName))
+            .WithCreateParameterModifier(modifier =>
+            {
+                modifier.HostConfig.Memory = 1024 * 1024 * 1024; // 1 GB
+            })
+            .Build();
+
+        await _dbContainer.StartAsync();
+
+        string connectionString = _dbContainer.GetConnectionString();
 
         // External API mocks
         PokeApiMockServer = WireMockServer.Start();
@@ -101,16 +108,10 @@ public class PokeTacticsFixture : IAsyncLifetime
     public async Task DisposeAsync()
     {
         ApiClient.Dispose();
-        Factory.Dispose();
+        await Factory.DisposeAsync();
         PokeApiMockServer.Stop();
         PokeApiMockServer.Dispose();
-        
-        await using var connection = new MySqlConnection(RootConnectionString);
-        await connection.OpenAsync();
-
-        await using var command = connection.CreateCommand();
-        command.CommandText = $"DROP DATABASE IF EXISTS `{_databaseName}`;";
-        await command.ExecuteNonQueryAsync();
+        await _dbContainer.StopAsync();
     }
 
     #region Mock external services

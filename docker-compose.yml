@@ -1,13 +1,13 @@
 services:
   db:
-    image: mysql:8.0
+    image: ${DB_IMAGE}
     container_name: poketactics_db
     restart: always
     environment:
-      - MYSQL_DATABASE=poketactics
-      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
     ports:
-      - "3306:3306"
+      - "${DB_PORT}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     deploy:
@@ -28,7 +28,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - ConnectionStrings__DefaultConnection=server=db;database=poketactics;user=root;password=password;
+      - ConnectionStrings__DefaultConnection=server=db;database=${DB_NAME};user=${DB_USER};password=${DB_PASSWORD};
       - ASPNETCORE_ENVIRONMENT=Development
     deploy:
       resources:
