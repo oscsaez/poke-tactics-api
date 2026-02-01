@@ -8,7 +8,7 @@ public static class SpriteExtensions
     {
         return sprite1.OfficialArtworkUri == sprite2.OfficialArtworkUri &&
             sprite1.CompareMaleUris(sprite2) &&
-            sprite2.CompareFemaleUris(sprite2);
+            sprite1.CompareFemaleUris(sprite2);
     }
 
     private static bool CompareMaleUris(this Sprite sprite1, Sprite sprite2)
