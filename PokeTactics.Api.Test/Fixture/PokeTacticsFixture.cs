@@ -35,6 +35,11 @@ public class PokeTacticsFixture : IAsyncLifetime
     private const string PokeApiPokemonPath = "/pokemon";
     private const string LimitParam = "limit";
 
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+    };
+
     private MySqlContainer _dbContainer = null!;
 
     public HttpClient ApiClient { get; private set; } = null!;
@@ -96,7 +101,7 @@ public class PokeTacticsFixture : IAsyncLifetime
 
                     services.AddHttpClient(ExternalApiName, client =>
                     {
-                        client.BaseAddress = new Uri(PokeApiMockServer.Url);
+                        client.BaseAddress = new Uri(PokeApiMockServer.Url!);
                     });
                 });
             });
@@ -118,14 +123,9 @@ public class PokeTacticsFixture : IAsyncLifetime
 
     public void ConfigurePokeApiMockServerForGet<TResponse>(string path, TResponse response) where TResponse : class
     {
-        JsonSerializerOptions jsonOptions = new()
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-        };
-
         PokeApiMockServer
             .Given(Request.Create().WithPath(path).UsingGet())
-            .RespondWith(Response.Create().WithSuccess().WithBody(JsonSerializer.Serialize(response, jsonOptions)));
+            .RespondWith(Response.Create().WithSuccess().WithBody(JsonSerializer.Serialize(response, _jsonOptions)));
     }
 
     public void ConfigurePokeApiMockServerToGetEmptyAbilitiesSummary()

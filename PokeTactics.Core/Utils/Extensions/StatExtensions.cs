@@ -28,6 +28,6 @@ public static class StatExtensions
     public static bool Compare(this Stat stat1, Stat stat2)
     {
         return stat1.Name == stat2.Name &&
-            stat2.Base == stat2.Base;
+            stat1.Base == stat2.Base;
     }
 }

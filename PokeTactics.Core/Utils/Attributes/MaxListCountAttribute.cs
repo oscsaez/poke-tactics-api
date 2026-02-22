@@ -17,12 +17,9 @@ namespace PokeTactics.Core.Utils.Attributes
 
         public override bool IsValid(object? value)
         {
-            if (value is ICollection collection)
+            if (value is ICollection collection && collection.Count > _maxCount)
             {
-                if (collection.Count > _maxCount)
-                {
-                    return false;
-                }
+                return false;
             }
 
             return true;

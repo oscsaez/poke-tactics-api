@@ -14,10 +14,10 @@ namespace PokeTactics.Api.SyncServices;
 public class PokemonSyncService : IPokemonSyncService
 {
     private readonly IUnitOfWork _unitOfWork;
-    private readonly ILogger<AbilitySyncService> _logger;
+    private readonly ILogger<PokemonSyncService> _logger;
     private readonly HttpClient _httpClient;
 
-    public PokemonSyncService(IUnitOfWork unitOfWork, ILogger<AbilitySyncService> logger, IHttpClientFactory httpClientFactory)
+    public PokemonSyncService(IUnitOfWork unitOfWork, ILogger<PokemonSyncService> logger, IHttpClientFactory httpClientFactory)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
@@ -71,7 +71,7 @@ public class PokemonSyncService : IPokemonSyncService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing pokemon {}", pokemonSummary.Name);
+                _logger.LogError(ex, "Error processing pokemon {PokemonName}", pokemonSummary.Name);
             }
         });
 
