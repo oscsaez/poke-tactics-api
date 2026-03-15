@@ -37,7 +37,7 @@
   <Target Name="GenerateKotlinClient" AfterTargets="EnsureGradleWrapper">
     <Message Importance="high" Text="re-generating Kotlin client..." />
     <Exec Condition="Exists('../PokeTactics.Api.Clients.Kotlin/swagger.json')"
-          Command="./gradlew openApiGenerate" 
+          Command="./gradlew openApiGenerate --no-daemon --max-workers=1" 
           WorkingDirectory="$(MSBuildProjectDirectory)/../PokeTactics.Api.Clients.Kotlin" />
   </Target>
 
