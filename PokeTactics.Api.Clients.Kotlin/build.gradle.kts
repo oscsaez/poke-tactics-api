@@ -1,18 +1,22 @@
+// TODO: Add conts for version numbers and dependencies
 plugins {
     kotlin("jvm") version "1.9.22"
     kotlin("plugin.serialization") version "1.9.22"
     id("org.openapi.generator") version "7.2.0"
+    id("com.google.devtools.ksp") version "1.9.22-1.0.17"
 }
 
 group = "com.poketactics"
 version = "1.0.0"
 
 repositories {
+    google()
     mavenCentral()
 }
 
 dependencies {
     val ktorVersion = "2.3.7"
+    val hiltVersion = "2.44"
     
     // Ktor core and client for Android/JVM
     implementation("io.ktor:ktor-client-core:$ktorVersion")
@@ -21,6 +25,10 @@ dependencies {
     // For client understanding JSON
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+
+    // Dagger
+    implementation("com.google.dagger:hilt-core:$hiltVersion")
+    ksp("com.google.dagger:hilt-compiler:$hiltVersion")
 }
 
 openApiGenerate {
@@ -35,7 +43,8 @@ openApiGenerate {
         "serializationLibrary" to "kotlinx_serialization",
         "enumPropertyNaming" to "UPPERCASE",
         "useCoroutines" to "true",
-        "generatedAnnotations" to "true"
+        "generatedAnnotations" to "true",
+        "apiNameSuffix" to "Api"
     ))
 }
 
