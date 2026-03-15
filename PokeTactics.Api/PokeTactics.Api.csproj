@@ -35,10 +35,16 @@
   </Target>
 
   <Target Name="GenerateKotlinClient" AfterTargets="EnsureGradleWrapper">
-    <Message Importance="high" Text="re-generating Kotlin client..." />
+    <Message Importance="high" Text="Re-generating Kotlin client..." />
     <Exec Condition="Exists('../PokeTactics.Api.Clients.Kotlin/swagger.json')"
           Command="./gradlew openApiGenerate --no-daemon --max-workers=1" 
           WorkingDirectory="$(MSBuildProjectDirectory)/../PokeTactics.Api.Clients.Kotlin" />
+  </Target>
+
+  <Target Name="BuildKotlinClient" AfterTargets="GenerateKotlinClient">
+    <Message Importance="high" Text="Building Kotlin client..." />
+    <Exec Command="./gradlew assemble --no-daemon --max-workers=1" 
+        WorkingDirectory="$(MSBuildProjectDirectory)/../PokeTactics.Api.Clients.Kotlin" />
   </Target>
 
 </Project>
