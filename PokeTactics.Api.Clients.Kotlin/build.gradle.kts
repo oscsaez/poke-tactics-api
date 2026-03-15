@@ -34,7 +34,8 @@ openApiGenerate {
         "library" to "jvm-ktor",
         "serializationLibrary" to "kotlinx_serialization",
         "enumPropertyNaming" to "UPPERCASE",
-        "useCoroutines" to "true"
+        "useCoroutines" to "true",
+        "generatedAnnotations" to "true"
     ))
 }
 
