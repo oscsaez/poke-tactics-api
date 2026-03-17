@@ -1,3 +1,5 @@
+package com.poketactics.clients
+
 import com.poketactics.clients.api.PokeTacticsApiVersion1000CultureneutralPublicKeyTokennullApi as PokeTacticsClient
 import dagger.Module
 import dagger.Provides

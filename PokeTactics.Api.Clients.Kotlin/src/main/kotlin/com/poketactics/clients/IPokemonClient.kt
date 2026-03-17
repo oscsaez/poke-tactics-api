@@ -1,3 +1,5 @@
+package com.poketactics.clients
+
 import com.poketactics.clients.models.KeysetPaginationResponse
 
 interface IPokemonClient {

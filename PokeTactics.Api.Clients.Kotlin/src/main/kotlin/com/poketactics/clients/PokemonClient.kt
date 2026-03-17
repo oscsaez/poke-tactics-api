@@ -1,8 +1,10 @@
+package com.poketactics.clients
+
 import com.poketactics.clients.api.PokeTacticsApiVersion1000CultureneutralPublicKeyTokennullApi as PokeTacticsClient
 import com.poketactics.clients.models.KeysetPaginationResponse
 import javax.inject.Inject
 
-internal class PokemonClient @Inject constructor(
+class PokemonClient @Inject constructor(
     private val client: PokeTacticsClient
 ) : IPokemonClient {
 

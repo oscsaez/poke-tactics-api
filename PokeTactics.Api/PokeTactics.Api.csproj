@@ -47,4 +47,12 @@
         WorkingDirectory="$(MSBuildProjectDirectory)/../PokeTactics.Api.Clients.Kotlin" />
   </Target>
 
+  <Target Name="EnsureGradleWrapperForTesting" AfterTargets="BuildKotlinClient">
+    <Message Importance="high" Text="--- Gradle Wrapper not found for client tests. Generating... ---" />
+    <Exec Condition="!Exists('$(MSBuildProjectDirectory)/../PokeTactics.Api.Clients.Kotlin.Test/gradlew')"
+          Command="gradle wrapper --gradle-version 8.5" 
+          WorkingDirectory="$(MSBuildProjectDirectory)/../PokeTactics.Api.Clients.Kotlin.Test" />
+    <Message Importance="high" Text="--- Gradle Wrapper generated successfully for client tests. ---" />
+  </Target>
+
 </Project>
