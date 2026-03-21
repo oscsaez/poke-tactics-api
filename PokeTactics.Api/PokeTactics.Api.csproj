@@ -55,4 +55,10 @@
     <Message Importance="high" Text="--- Gradle Wrapper generated successfully for client tests. ---" />
   </Target>
 
+  <Target Name="BuildKotlinTests" AfterTargets="EnsureGradleWrapperForTesting">
+    <Message Importance="high" Text="--- Building Kotlin Client Tests ---" />
+    <Exec Command="./gradlew assemble --no-daemon --max-workers=1" 
+          WorkingDirectory="$(MSBuildProjectDirectory)/../PokeTactics.Api.Clients.Kotlin.Test" />
+  </Target>
+
 </Project>
