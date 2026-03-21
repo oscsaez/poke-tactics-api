@@ -53,6 +53,9 @@ jobs:
           --verbosity normal \
           --collect:"XPlat Code Coverage" \
           -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+    - name: Client tests
+      working-directory: ./PokeTactics.Api.Clients.Kotlin.Test/gradlew
+      run: ./gradlew test --no-daemon
     - name: Sonar End
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
