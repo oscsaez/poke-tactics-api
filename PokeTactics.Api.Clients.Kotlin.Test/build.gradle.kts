@@ -3,6 +3,11 @@ plugins {
     kotlin("plugin.serialization") version "1.9.22"
 }
 
+repositories {
+    mavenCentral()
+    google()
+}
+
 dependencies {
     val ktorVersion = "2.3.7"
 
