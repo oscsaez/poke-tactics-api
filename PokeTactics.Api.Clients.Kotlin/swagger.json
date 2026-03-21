@@ -1,0 +1,320 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "PokeTactics API",
+    "version": "v1"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "PokeTactics.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/pokemon": {
+      "get": {
+        "tags": [
+          "PokeTactics.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
+        ],
+        "summary": "Returns a paginated list of pokemon with abilities and moves",
+        "description": "Returns a list of pokemon with abilities and moves using keyset pagination. \n            The pokemon are sorted by PokedexOrder and then by Id, but the ones with\n            null or negative PokedexOrder are returned at the end.",
+        "operationId": "GetPokemon",
+        "parameters": [
+          {
+            "name": "PageSize",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "LastPokedexOrder",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "LastId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeysetPaginationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pokemon/simple": {
+      "get": {
+        "tags": [
+          "PokeTactics.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
+        ],
+        "summary": "Returns a paginated list of pokemon without abilities and moves",
+        "description": "Returns a list of pokemon without abilities and moves using keyset pagination. \n            The pokemon are sorted by PokedexOrder and then by Id, but the ones with\n            null or negative PokedexOrder are returned at the end.",
+        "operationId": "GetPokemonSimple",
+        "parameters": [
+          {
+            "name": "PageSize",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "LastPokedexOrder",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "LastId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeysetPaginationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AbilityDto": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "isHidden": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "KeysetPaginationResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PokemonDto"
+            },
+            "nullable": true
+          },
+          "nextLastPokedexOrder": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "nextLastId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "MoveDto": {
+        "required": [
+          "name",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "power": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "accuracy": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "powerPoints": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PokemonDto": {
+        "required": [
+          "name",
+          "sprite"
+        ],
+        "type": "object",
+        "properties": {
+          "pokedexOrder": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "height": {
+            "type": "number",
+            "format": "double"
+          },
+          "weight": {
+            "type": "number",
+            "format": "double"
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "stats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatDto"
+            },
+            "nullable": true
+          },
+          "abilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbilityDto"
+            },
+            "nullable": true
+          },
+          "moves": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MoveDto"
+            },
+            "nullable": true
+          },
+          "sprite": {
+            "$ref": "#/components/schemas/SpriteDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SpriteDto": {
+        "type": "object",
+        "properties": {
+          "officialArtworkUri": {
+            "type": "string",
+            "nullable": true
+          },
+          "backMaleUri": {
+            "type": "string",
+            "nullable": true
+          },
+          "backFemaleUri": {
+            "type": "string",
+            "nullable": true
+          },
+          "backShinyMaleUri": {
+            "type": "string",
+            "nullable": true
+          },
+          "backShinyFemaleUri": {
+            "type": "string",
+            "nullable": true
+          },
+          "frontMaleUri": {
+            "type": "string",
+            "nullable": true
+          },
+          "frontFemaleUri": {
+            "type": "string",
+            "nullable": true
+          },
+          "frontShinyMaleUri": {
+            "type": "string",
+            "nullable": true
+          },
+          "frontShinyFemaleUri": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "StatDto": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "base": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

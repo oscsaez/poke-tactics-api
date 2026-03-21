@@ -7,16 +7,19 @@ using PokeTactics.Core.Definitions;
 using PokeTactics.Api;
 using PokeTactics.Api.Endpoints;
 using PokeTactics.Services;
+using Microsoft.OpenApi.Models;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 ConfigurationManager configuration = builder.Configuration;
 string? connectionString = configuration.GetConnectionString(ApiConstants.DefaultConnection);
 
-// Add services to the container.
+// Add services to the container (db connection configuration).
+var serverVersion = new MySqlServerVersion(new Version(8, 0));
+
 builder.Services.AddDbContext<PokeTacticsContext>(options =>
     options.UseMySql(
         connectionString,
-        ServerVersion.AutoDetect(connectionString),
+        serverVersion,
         x => x.MigrationsAssembly(ApiConstants.MigrationsAssembly)));
 
 // Enable compatibility with camelCase json fields
@@ -32,7 +35,19 @@ builder.Services.Configure<PokemonSyncSettings>(
 
 // Add swagger documentation (API and UI)
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    var openApiInfo = new OpenApiInfo
+    {
+        Title = "PokeTactics API",
+        Version = ApiConstants.ApiVersion
+    };
+
+    options.SwaggerDoc(ApiConstants.ApiVersion, openApiInfo);
+    options.CustomSchemaIds(type => type.Name.Contains('`')
+        ? type.Name.Substring(0, type.Name.IndexOf('`'))
+        : type.Name);
+});
 
 builder.Services.AddApiServices();
 builder.Services.AddInfrastructureServices();
@@ -48,8 +63,16 @@ WebApplication app = builder.Build();
 // Apply migrations when starting service
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<PokeTacticsContext>();
-    await db.Database.MigrateAsync();
+    // This try-catch is for avoiding compilation failure of swagger generation process
+    try
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<PokeTacticsContext>();
+        await dbContext.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"WARNING: Cannot connect to DB: {ex.Message}");
+    }
 }
 
 // Configure the HTTP request pipeline.
