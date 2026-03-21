@@ -54,7 +54,7 @@ jobs:
           --collect:"XPlat Code Coverage" \
           -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
     - name: Client tests
-      working-directory: ./PokeTactics.Api.Clients.Kotlin.Test/gradlew
+      working-directory: ./PokeTactics.Api.Clients.Kotlin.Test
       run: ./gradlew test --no-daemon
     - name: Sonar End
       env:
