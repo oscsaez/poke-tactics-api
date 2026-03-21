@@ -36,11 +36,11 @@ jobs:
           /d:sonar.host.url="https://sonarcloud.io" \
           /d:sonar.login="${SONAR_TOKEN}" \
           /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.opencover.xml" \
-          /d:sonar.coverage.exclusions="**/Entities/**,**/Models/**,**/DTOs/**,**/Migrations/**,**/*Program.cs*,**/*Startup.cs*, **/swagger.json, **/.openapi-generator-ignore, **/gradlew, **/gradlew.bat, **/com/poketactics/clients/api/**/*, **/com/poketactics/clients/models/**/*" \
+          /d:sonar.coverage.exclusions="**/Entities/**,**/Models/**,**/DTOs/**,**/Migrations/**,**/*Program.cs*,**/*Startup.cs*, **/swagger.json, **/.openapi-generator-ignore, **/gradlew, **/gradlew.bat, **/com/poketactics/clients/api/**/*, **/com/poketactics/clients/models/**/*, **/*Test.kt" \
           /d:sonar.sources="." \
-          /d:sonar.tests="PokeTactics.Api.Clients.Kotlin.Test/src/test/kotlin" \
-          /d:sonar.junit.reportPaths="PokeTactics.Api.Clients.Kotlin.Test/build/test-results/test" \
-          /d:sonar.kotlin.binaries="PokeTactics.Api.Clients.Kotlin/build/classes/kotlin/main"
+          /d:sonar.tests="." \
+          /d:sonar.test.inclusions="**/*Test.kt, **/src/test/**" \
+          /d:sonar.junit.reportPaths="PokeTactics.Api.Clients.Kotlin.Test/build/test-results/test"
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
