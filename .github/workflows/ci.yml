@@ -14,17 +14,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 9.0.300
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
           java-version: "17"
+
       - name: Install SonarScanner
         run: dotnet tool install --global dotnet-sonarscanner
+
       - name: Sonar Begin
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -41,10 +45,13 @@ jobs:
             /d:sonar.tests="." \
             /d:sonar.test.inclusions="**/*Test.kt,**/src/test/**" \
             /d:sonar.junit.reportPaths="PokeTactics.Api.Clients.Kotlin.Test/build/test-results/test"
+
       - name: Restore dependencies
         run: dotnet restore
+
       - name: Build
         run: dotnet build --no-restore
+
       - name: Test with coverage
         env:
           DB_IMAGE: mysql:8.0
@@ -57,9 +64,11 @@ jobs:
             --verbosity normal \
             --collect:"XPlat Code Coverage" \
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
       - name: Client tests
         working-directory: ./PokeTactics.Api.Clients.Kotlin.Test
         run: ./gradlew test --no-daemon
+
       - name: Sonar End
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
