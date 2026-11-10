@@ -1,7 +1,7 @@
 plugins {
-    kotlin("jvm")
-    kotlin("plugin.serialization")
-    id("org.jetbrains.kotlinx.kover")
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kover)
 }
 
 repositories {
@@ -10,18 +10,15 @@ repositories {
 }
 
 dependencies {
-    val ktorVersion = "2.3.7"
-    val coroutinesVersion = "1.7.3"
-
     implementation(project(":PokeTactics.Api.Clients.Kotlin"))
 
-    implementation("io.ktor:ktor-client-core:$ktorVersion")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
-    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.ktor.client.content.negotiation)
 
-    testImplementation("org.jetbrains.kotlin:kotlin-test")
-    testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion")
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.ktor.client.mock)
+    testImplementation(libs.coroutines.test)
 
     kover(project(":PokeTactics.Api.Clients.Kotlin"))
 }

@@ -1,9 +1,9 @@
 plugins {
-    kotlin("jvm")
-    kotlin("plugin.serialization")
-    id("org.jetbrains.kotlinx.kover")
-    id("org.openapi.generator") version "7.2.0"
-    id("com.google.devtools.ksp") version "1.9.22-1.0.17"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kover)
+    alias(libs.plugins.openapi.generator)
+    alias(libs.plugins.ksp)
 }
 
 group = "com.poketactics"
@@ -15,20 +15,17 @@ repositories {
 }
 
 dependencies {
-    val ktorVersion = "2.3.7"
-    val hiltVersion = "2.50"
-    
     // Ktor core and client for Android/JVM
-    implementation("io.ktor:ktor-client-core:$ktorVersion")
-    implementation("io.ktor:ktor-client-cio:$ktorVersion") 
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
     
     // For client understanding JSON
-    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
 
     // Dagger
-    implementation("com.google.dagger:hilt-core:$hiltVersion")
-    ksp("com.google.dagger:hilt-compiler:$hiltVersion")
+    implementation(libs.hilt.core)
+    ksp(libs.hilt.compiler)
 }
 
 openApiGenerate {
