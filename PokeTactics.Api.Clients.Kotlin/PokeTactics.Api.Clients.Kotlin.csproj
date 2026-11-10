@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="src/" />
+    <Folder Include="src/main/" />
+    <Folder Include="src/main/kotlin/" />
+    <Folder Include="src/main/kotlin/com/" />
+    <Folder Include="src/main/kotlin/com/poketactics/" />
+    <Folder Include="src/main/kotlin/com/poketactics/clients/" />
+  </ItemGroup>
+
+</Project>

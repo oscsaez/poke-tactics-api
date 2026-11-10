@@ -11,7 +11,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,5 +20,45 @@
     <ProjectReference Include="..\PokeTactics.Contracts\PokeTactics.Contracts.csproj" />
     <ProjectReference Include="..\PokeTactics.Services\PokeTactics.Services.csproj" />
   </ItemGroup>
+
+  <Target Name="GenerateSwaggerJson" AfterTargets="Build">
+    <Exec Command="dotnet swagger tofile --output ../PokeTactics.Api.Clients.Kotlin/swagger.json $(OutputPath)$(AssemblyName).dll v1"
+          IgnoreExitCode="true" />
+  </Target>
+
+  <Target Name="EnsureGradleWrapper" AfterTargets="GenerateSwaggerJson">
+    <Message Importance="high" Text="--- Gradle Wrapper not found. Generating... ---" />
+    <Exec Condition="!Exists('$(MSBuildProjectDirectory)/../PokeTactics.Api.Clients.Kotlin/gradlew')"
+          Command="gradle wrapper --gradle-version 8.5" 
+          WorkingDirectory="$(MSBuildProjectDirectory)/../PokeTactics.Api.Clients.Kotlin" />
+    <Message Importance="high" Text="--- Gradle Wrapper generated successfully. ---" />
+  </Target>
+
+  <Target Name="GenerateKotlinClient" AfterTargets="EnsureGradleWrapper">
+    <Message Importance="high" Text="Re-generating Kotlin client..." />
+    <Exec Condition="Exists('../PokeTactics.Api.Clients.Kotlin/swagger.json')"
+          Command="./gradlew openApiGenerate --no-daemon --max-workers=1" 
+          WorkingDirectory="$(MSBuildProjectDirectory)/../PokeTactics.Api.Clients.Kotlin" />
+  </Target>
+
+  <Target Name="BuildKotlinClient" AfterTargets="GenerateKotlinClient">
+    <Message Importance="high" Text="Building Kotlin client..." />
+    <Exec Command="./gradlew assemble --no-daemon --max-workers=1" 
+        WorkingDirectory="$(MSBuildProjectDirectory)/../PokeTactics.Api.Clients.Kotlin" />
+  </Target>
+
+  <Target Name="EnsureGradleWrapperForTesting" AfterTargets="BuildKotlinClient">
+    <Message Importance="high" Text="--- Gradle Wrapper not found for client tests. Generating... ---" />
+    <Exec Condition="!Exists('$(MSBuildProjectDirectory)/../PokeTactics.Api.Clients.Kotlin.Test/gradlew')"
+          Command="gradle wrapper --gradle-version 8.5" 
+          WorkingDirectory="$(MSBuildProjectDirectory)/../PokeTactics.Api.Clients.Kotlin.Test" />
+    <Message Importance="high" Text="--- Gradle Wrapper generated successfully for client tests. ---" />
+  </Target>
+
+  <Target Name="BuildKotlinTests" AfterTargets="EnsureGradleWrapperForTesting">
+    <Message Importance="high" Text="--- Building Kotlin Client Tests ---" />
+    <Exec Command="./gradlew assemble --no-daemon --max-workers=1" 
+          WorkingDirectory="$(MSBuildProjectDirectory)/../PokeTactics.Api.Clients.Kotlin.Test" />
+  </Target>
 
 </Project>
