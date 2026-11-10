@@ -74,3 +74,6 @@ PokeTactics.Api.Clients.Kotlin.Test/build
 
 # Kotlin root gradle
 .gradle
+
+# Kotlin build problems repory
+build/reports/problems
