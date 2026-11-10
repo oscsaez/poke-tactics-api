@@ -19,6 +19,8 @@ dependencies {
     testImplementation(libs.kotlin.test)
     testImplementation(libs.ktor.client.mock)
     testImplementation(libs.coroutines.test)
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
 
     kover(project(":PokeTactics.Api.Clients.Kotlin"))
 }
